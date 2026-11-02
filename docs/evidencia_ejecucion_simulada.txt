@@ -1,0 +1,265 @@
+MONGO_URI=mongomock://: usando MongoDB falso en memoria.
+Base NoSQL: SIMULADA en memoria (mongomock)
+
+=== GET /api/salud
+HTTP 200
+{
+  "mongodb": "ok",
+  "sqlite": "ok"
+}
+
+=== POST /api/auth/login  (se guarda el evento 'login' en Mongo)
+HTTP 200
+{
+  "progreso": {
+    "diagnostico": null,
+    "erroresCorregidos": 0,
+    "porcentajeCurso": 0,
+    "totalEnvios": 0
+  },
+  "siguiente": "diagnostico",
+  ...
+
+=== POST /api/depurador/analizar (2.º envío: guarda 'codigo_analizado' y genera recomendación)
+HTTP 200
+{
+  "erroresDetectados": [
+    {
+      "ejemploCorrecto": "<div class=\"valor\">",
+      "ejemploIncorrecto": "<div class=valor>",
+      "explicacionIA": "El atributo class de la etiqueta <div> en la línea 1 tiene un valor sin comillas. Encierra el valor entre comillas: class=\"valor\".",
+      "linea": 1,
+      "solucion": "Coloca el valor completo del atributo entre comillas.",
+      "tipo": "atributo_sin_comillas",
+      "titulo": "Atributo sin comillas"
+    },
+    {
+  ...
+
+=== POST /api/actividad  (CREATE actividad)
+HTTP 201
+{
+  "detalle": {
+    "tema": 3
+  },
+  "fecha": "2026-10-23T15:31:45.714388Z",
+  "id": "6adb7de103aab2216760b66b",
+  "idUsuario": 1,
+  "tipo": "tema_visto"
+}
+
+=== POST /api/modulos/2/comentarios  (CREATE comentario)
+HTTP 201
+{
+  "autor": "Estudiante Demo",
+  "editadoEn": null,
+  "etiquetas": [
+    "duda"
+  ],
+  "fecha": "2026-10-23T15:31:45.715854Z",
+  "fragmentoCodigo": "<!DOCTYPE html>",
+  "id": "6adb7de103aab2216760b66c",
+  "idModulo": 2,
+  "idUsuario": 1,
+  "reacciones": {},
+  "texto": "¿Por qué el DOCTYPE va primero?"
+}
+
+=== POST /api/comentarios/{id}/reacciones  (UPDATE parcial con $inc)
+HTTP 200
+{
+  "autor": "Estudiante Demo",
+  "editadoEn": null,
+  "etiquetas": [
+    "duda"
+  ],
+  "fecha": "2026-10-23T15:31:45.715000Z",
+  "fragmentoCodigo": "<!DOCTYPE html>",
+  "id": "6adb7de103aab2216760b66c",
+  "idModulo": 2,
+  "idUsuario": 1,
+  "reacciones": {
+    "util": 1
+  },
+  "texto": "¿Por qué el DOCTYPE va primero?"
+}
+
+=== PUT /api/comentarios/{id}  (UPDATE)
+HTTP 200
+{
+  "autor": "Estudiante Demo",
+  "editadoEn": "2026-10-23T15:31:45.719000Z",
+  "etiquetas": [
+    "resuelto"
+  ],
+  "fecha": "2026-10-23T15:31:45.715000Z",
+  "id": "6adb7de103aab2216760b66c",
+  "idModulo": 2,
+  "idUsuario": 1,
+  "reacciones": {
+    "util": 1
+  },
+  "texto": "Ya lo entendí"
+}
+
+=== GET /api/modulos/2/comentarios  (READ: Mongo + nombre del autor desde SQLite)
+HTTP 200
+{
+  "comentarios": [
+    {
+      "autor": "Estudiante Demo",
+      "editadoEn": "2026-10-23T15:31:45.719000Z",
+      "etiquetas": [
+        "resuelto"
+      ],
+      "fecha": "2026-10-23T15:31:45.715000Z",
+      "id": "6adb7de103aab2216760b66c",
+      "idModulo": 2,
+      "idUsuario": 1,
+      "reacciones": {
+        "util": 1
+      },
+      "texto": "Ya lo entendí"
+    }
+  ],
+  "idModulo": 2,
+  "total": 1
+}
+
+=== GET /api/usuarios/1/perfil-completo  (ENDPOINT COMBINADO SQL + NoSQL)
+HTTP 200
+{
+  "actividad": {
+    "comentariosEscritos": 1,
+    "disponible": true,
+    "totalPorTipo": {
+      "codigo_analizado": 2,
+      "comentario_creado": 1,
+      "login": 1,
+      "tema_visto": 1
+    },
+    "ultimas": [
+      {
+        "detalle": {
+          "idComentario": "6adb7de103aab2216760b66c",
+          "idModulo": 2
+        },
+        "fecha": "2026-10-23T15:31:45.715000Z",
+        "id": "6adb7de103aab2216760b66d",
+        "idUsuario": 1,
+        "tipo": "comentario_creado"
+      },
+      {
+        "detalle": {
+          "tema": 3
+        },
+        "fecha": "2026-10-23T15:31:45.714000Z",
+        "id": "6adb7de103aab2216760b66b",
+        "idUsuario": 1,
+        "tipo": "tema_visto"
+      },
+      {
+        "detalle": {
+          "idEnvio": 2,
+          "recomendacionGenerada": true,
+          "tipos": [
+            "atributo_sin_comillas",
+            "etiqueta_en_mayusculas",
+            "etiqueta_sin_cerrar"
+          ],
+          "totalErrores": 4
+        },
+        "fecha": "2026-10-23T15:31:45.711000Z",
+        "id": "6adb7de103aab2216760b66a",
+        "idUsuario": 1,
+        "tipo": "codigo_analizado"
+      },
+      {
+        "detalle": {
+          "idEnvio": 1,
+          "recomendacionGenerada": false,
+          "tipos": [
+            "atributo_sin_comillas",
+            "etiqueta_en_mayusculas",
+            "etiqueta_sin_cerrar"
+          ],
+          "totalErrores": 4
+        },
+        "fecha": "2026-10-23T15:31:45.707000Z",
+        "id": "6adb7de103aab2216760b669",
+        "idUsuario": 1,
+        "tipo": "codigo_analizado"
+      },
+      {
+        "detalle": {
+          "rol": "estudiante"
+        },
+        "fecha": "2026-10-23T15:31:45.702000Z",
+        "id": "6adb7de103aab2216760b668",
+        "idUsuario": 1,
+        "tipo": "login"
+      }
+    ]
+  },
+  "fuentes": {
+    "nosql": "MongoDB",
+    "sql": "SQLite"
+  },
+  "progreso": {
+    "diagnostico": null,
+    "erroresCorregidos": 0,
+    "porcentajeCurso": 0,
+    "totalEnvios": 2
+  },
+  "recomendacion": {
+    "basadoEnErrores": [
+      "atributo_sin_comillas",
+      "etiqueta_en_mayusculas",
+      "etiqueta_sin_cerrar"
+    ],
+    "fecha": "2026-10-23 15:31:45",
+    "idRecomendacion": 1,
+    "modulosSugeridos": [
+      {
+        "curso": "HTML Básico",
+        "idModulo": 2,
+        "modulo": "Estructura básica de HTML",
+        "orden": 2
+      },
+      {
+        "curso": "HTML Básico",
+        "idModulo": 3,
+        "modulo": "Atributos y sintaxis",
+        "orden": 3
+      },
+      {
+        "curso": "HTML Básico",
+        "idModulo": 5,
+        "modulo": "Errores comunes y buenas prácticas",
+        "orden": 5
+      }
+    ],
+    "usuarioId": 1
+  },
+  "usuario": {
+    "email": "estudiante@edudebug.com",
+    "fechaRegistro": "2026-10-23 15:31:45",
+    "id": 1,
+    "nombre": "Estudiante Demo",
+    "rol": "estudiante"
+  }
+}
+
+=== DELETE /api/comentarios/{id}  (DELETE)
+HTTP 200
+{
+  "eliminado": true
+}
+
+=== DELETE /api/actividad/{id}  (DELETE)
+HTTP 200
+{
+  "eliminado": true
+}
+
+NOTA: esta ejecución usó MongoDB simulado. Para evidencia real, define MONGO_URI en .env.

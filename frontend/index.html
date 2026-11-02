@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EDUDEBUG</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Nuestro CSS -->
+    <link rel="stylesheet" href="estilos.css">
+
+</head>
+
+
+<body>
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA INICIAL -->
+    <!-- ================================================= -->
+
+    <section id="pantallaIcono" class="pantalla pantalla-icono">
+
+        <div class="logo-icono">
+            &lt;/&gt;
+        </div>
+
+        <h1>EDUDEBUG</h1>
+
+        <p>Aprende. Practica. Corrige.</p>
+
+        <button class="btn btn-primary btn-lg" onclick="mostrarPantalla('pantallaBienvenida')">
+            Comenzar
+        </button>
+
+    </section>
+
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA DE BIENVENIDA -->
+    <!-- ================================================= -->
+
+    <section id="pantallaBienvenida" class="pantalla oculto">
+
+        <div class="contenedor">
+
+            <div class="logo">
+                &lt;/&gt; EDUDEBUG
+            </div>
+
+
+            <h1 class="bienvenida-titulo">
+
+                Aprende HTML:
+                <span>práctica de verdad</span>
+
+            </h1>
+
+
+            <p class="descripcion">
+
+                Aprende HTML practicando, encuentra tus errores
+                y recibe retroalimentación inmediata.
+
+            </p>
+
+
+            <!-- BENEFICIO 1 -->
+
+            <div class="beneficio">
+
+                <div class="beneficio-icono">
+                    ✓
+                </div>
+
+                <p>
+                    Practica HTML con ejercicios sencillos.
+                </p>
+
+            </div>
+
+
+            <!-- BENEFICIO 2 -->
+
+            <div class="beneficio">
+
+                <div class="beneficio-icono">
+                    ✓
+                </div>
+
+                <p>
+                    Encuentra tus errores y aprende a corregirlos.
+                </p>
+
+            </div>
+
+
+            <!-- BENEFICIO 3 -->
+
+            <div class="beneficio">
+
+                <div class="beneficio-icono">
+                    ✓
+                </div>
+
+                <p>
+                    Recibe retroalimentación inmediatamente.
+                </p>
+
+            </div>
+
+
+            <!-- BOTONES -->
+
+            <div class="botones">
+
+                <button class="btn btn-primary" onclick="mostrarPantalla('pantallaRegistro')">
+                    Crear cuenta
+                </button>
+
+
+                <button class="btn btn-outline-primary" onclick="mostrarPantalla('pantallaLogin')">
+                    Ya tengo una cuenta
+                </button>
+
+            </div>
+
+            <p class="text-center text-muted mt-3" style="font-size: 13px;">
+                ¿Solo quieres ver cómo es el test?
+                <a href="#" onclick="entrarComoDemo(); return false;">Pruébalo sin crear cuenta</a>
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA LOGIN -->
+    <!-- ================================================= -->
+
+    <section id="pantallaLogin" class="pantalla oculto">
+
+        <div class="contenedor-formulario">
+
+
+            <div class="logo">
+                &lt;/&gt; EDUDEBUG
+            </div>
+
+
+            <h2>Iniciar sesión</h2>
+
+
+            <p>
+                Ingresa a tu cuenta para continuar.
+            </p>
+
+
+            <form id="formLogin">
+
+
+                <!-- CORREO -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Correo electrónico
+                    </label>
+
+                    <input type="email" id="correoLogin" class="form-control" placeholder="correo@ejemplo.com" required>
+
+                </div>
+
+
+                <!-- CONTRASEÑA -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Contraseña
+                    </label>
+
+                    <input type="password" id="passwordLogin" class="form-control" placeholder="Contraseña" required>
+
+                </div>
+
+
+                <!-- RECORDAR -->
+
+                <div class="form-check mb-3">
+
+                    <input type="checkbox" class="form-check-input" id="recordarme">
+
+                    <label class="form-check-label" for="recordarme">
+                        Recordarme
+                    </label>
+
+                </div>
+
+
+                <!-- BOTON -->
+
+                <button type="submit" class="btn btn-primary w-100">
+                    Ingresar
+                </button>
+
+
+            </form>
+
+
+            <button class="btn-volver" onclick="mostrarPantalla('pantallaBienvenida')">
+                ← Volver
+            </button>
+
+            <p class="text-center text-muted mt-3" style="font-size: 13px;">
+                Cuentas de prueba: <strong>estudiante@edudebug.com</strong> / <strong>profesor@edudebug.com</strong>
+                (contraseña: <strong>123456</strong>)
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA REGISTRO -->
+    <!-- ================================================= -->
+
+    <section id="pantallaRegistro" class="pantalla oculto">
+
+        <div class="contenedor-formulario">
+
+
+            <div class="logo">
+                &lt;/&gt; EDUDEBUG
+            </div>
+
+
+            <h2>Crear cuenta</h2>
+
+
+            <p>
+                Regístrate para comenzar a practicar.
+            </p>
+
+
+            <form id="formRegistro">
+
+
+                <!-- NOMBRE -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Nombre
+                    </label>
+
+                    <input type="text" id="nombre" class="form-control" placeholder="Tu nombre" required>
+
+                </div>
+
+
+                <!-- CORREO -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Correo electrónico
+                    </label>
+
+                    <input type="email" id="correo" class="form-control" placeholder="correo@ejemplo.com" required>
+
+                </div>
+
+
+                <!-- TIPO DE USUARIO -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Tipo de usuario
+                    </label>
+
+
+                    <div class="tipo-usuario">
+
+
+                        <label class="usuario">
+
+                            <input type="radio" name="tipoUsuario" value="estudiante" checked>
+
+                            Estudiante
+
+                        </label>
+
+
+                        <label class="usuario">
+
+                            <input type="radio" name="tipoUsuario" value="profesor">
+
+                            Profesor
+
+                        </label>
+
+
+                    </div>
+
+                </div>
+
+
+                <!-- CONTRASEÑA -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Contraseña
+                    </label>
+
+                    <input type="password" id="password" class="form-control" placeholder="Contraseña" required>
+
+                </div>
+
+
+                <!-- CONFIRMAR CONTRASEÑA -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Confirmar contraseña
+                    </label>
+
+                    <input type="password" id="confirmarPassword" class="form-control"
+                        placeholder="Repite tu contraseña" required>
+
+                </div>
+
+
+                <!-- TERMINOS -->
+
+                <div class="form-check mb-3">
+
+                    <input type="checkbox" class="form-check-input" id="terminos" required>
+
+                    <label class="form-check-label" for="terminos">
+                        Acepto los términos y condiciones
+                    </label>
+
+                </div>
+
+
+                <!-- BOTON -->
+
+                <button type="submit" class="btn btn-primary w-100">
+                    Crear cuenta
+                </button>
+
+
+            </form>
+
+
+            <button class="btn-volver" onclick="mostrarPantalla('pantallaBienvenida')">
+                ← Volver
+            </button>
+
+            <p class="text-center text-muted mt-3" style="font-size: 13px;">
+                ¿Ya tienes cuenta? <a href="#" onclick="mostrarPantalla('pantallaLogin'); return false;">Inicia sesión</a><br>
+                O usa una cuenta de prueba: <strong>estudiante@edudebug.com</strong> / <strong>profesor@edudebug.com</strong>
+                (contraseña: <strong>123456</strong>)
+            </p>
+
+        </div>
+
+    </section>
+
+    <!-- ================================================= -->
+    <!-- PANTALLA DIAGNOSTICO -->
+    <!-- ================================================= -->
+
+    <section id="pantallaDiagnostico" class="pantalla oculto">
+
+        <div class="contenedor">
+
+            <div class="logo">
+                &lt;/&gt; EDUDEBUG
+            </div>
+
+            <h2>Diagnóstico de HTML</h2>
+
+            <p class="descripcion">
+                Responde 5 preguntas para conocer tu nivel. Se adaptan a tus respuestas.
+            </p>
+
+
+            <div class="d-flex justify-content-between mb-2">
+                <span id="diagnosticoContador">Pregunta 1 de 5</span>
+                <span id="diagnosticoPorcentaje">0%</span>
+            </div>
+
+            <div class="progress mb-3" style="height: 10px;">
+                <div id="diagnosticoBarra" class="progress-bar" role="progressbar" style="width: 0%;"></div>
+            </div>
+
+            <form id="formDiagnostico">
+
+                <!-- La API entrega una pregunta a la vez y adapta la dificultad a tus respuestas -->
+                <div id="preguntaDiagnostico"></div>
+
+                <button type="submit" id="btnEnviarDiagnostico" class="btn btn-primary w-100" disabled>
+                    Responder
+                </button>
+
+            </form>
+
+
+            <button class="btn-volver" onclick="mostrarPantalla('pantallaBienvenida')">
+
+                ← Volver
+
+            </button>
+
+        </div>
+
+    </section>
+    <!-- ================================================= -->
+    <!-- PANTALLA RESULTADO -->
+    <!-- ================================================= -->
+    <section id="pantallaResultado" class="pantalla oculto">
+
+        <div class="contenedor">
+
+            <div class="logo">EDUDEBUG</div>
+
+            <h2 class="bienvenida-titulo">
+                ¡Diagnóstico terminado!
+            </h2>
+
+            <p class="descripcion">
+                Ya revisamos tus respuestas. Este es tu resultado:
+            </p>
+
+            <div class="text-center">
+
+                <h1 id="resultadoPuntaje">0 de 5</h1>
+
+                <p id="resultadoMensaje" class="descripcion">
+                    Aquí aparecerá tu resultado.
+                </p>
+
+            </div>
+
+            <div id="resultadoDetalle" class="mt-2"></div>
+
+            <button type="button" class="btn btn-primary w-100 mt-3" onclick="continuarDiagnostico()">
+                Continuar
+            </button>
+        </div>
+
+    </section>
+
+    <!-- ============================================ -->
+    <!-- PANTALLA DE TEORIA HTML -->
+    <!-- ============================================ -->
+
+    <section id="pantallaTeoria" class="pantalla oculto">
+
+        <div id="tema1" class="contenedor">
+
+            <div class="logo">EDUDEBUG</div>
+
+            <h2 class="bienvenida-titulo">
+                ¿Qué es HTML y cómo funciona?
+            </h2>
+
+            <div class="d-flex justify-content-between mb-2">
+                <span>Progreso</span>
+                <span>20%</span>
+            </div>
+
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: 20%;">
+                </div>
+            </div>
+
+            <p class="text-muted">
+                Tema 1 de 5
+            </p>
+
+            <h4 class="mb-3">
+                HTML es la base de una página web
+            </h4>
+
+            <p>
+                HTML es el lenguaje que utilizamos para crear y organizar
+                el contenido de una página web. Podemos verlo como el
+                "esqueleto" de una página.
+            </p>
+
+            <p>
+                Con HTML podemos colocar títulos, textos, imágenes,
+                enlaces, listas y otros elementos que forman una página.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                <strong>Ejemplo:</strong>
+                <br><br>
+
+                &lt;p&gt;Hola, este es mi primer texto.&lt;/p&gt;
+                <br><br>
+
+                <strong>Etiqueta:</strong> &lt;p&gt;
+                <br>
+                <strong>Contenido:</strong> Hola, este es mi primer texto.
+                <br>
+                <strong>Elemento completo:</strong> &lt;p&gt;Hola, este es mi primer texto.&lt;/p&gt;
+            </div>
+
+            <p class="text-muted">
+                En los siguientes temas aprenderás cómo se estructura
+                un documento HTML y cómo utilizar sus diferentes elementos.
+            </p>
+
+            <button type="button" class="btn btn-primary w-100 mt-3" onclick="siguienteTema()">
+                Siguiente
+            </button>
+
+        </div>
+        <div id="tema2" class="contenedor oculto">
+
+            <div class="logo">EDUDEBUG</div>
+
+            <h2 class="bienvenida-titulo">
+                Estructura básica de HTML
+            </h2>
+
+            <div class="d-flex justify-content-between mb-2">
+                <span>Progreso</span>
+                <span>40%</span>
+            </div>
+
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: 40%;">
+                </div>
+            </div>
+
+            <p class="text-muted">
+                Tema 2 de 5
+            </p>
+
+            <h4 class="mb-3">
+                ¿Cómo se organiza un documento HTML?
+            </h4>
+
+            <p>
+                Un documento HTML tiene una estructura que organiza
+                el contenido de la página. Algunas partes son necesarias
+                para indicar al navegador cómo interpretar el documento.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                <strong>Ejemplo:</strong>
+                <br><br>
+
+                &lt;!DOCTYPE html&gt;<br>
+                &lt;html&gt;<br>
+                &nbsp;&nbsp;&lt;head&gt;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;title&gt;Mi página&lt;/title&gt;<br>
+                &nbsp;&nbsp;&lt;/head&gt;<br>
+                &nbsp;&nbsp;&lt;body&gt;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;h1&gt;Hola Mundo&lt;/h1&gt;<br>
+                &nbsp;&nbsp;&lt;/body&gt;<br>
+                &lt;/html&gt;
+            </div>
+
+            <p>
+                <strong>&lt;!DOCTYPE html&gt;</strong> indica que estamos
+                trabajando con HTML5.
+            </p>
+
+            <p>
+                <strong>&lt;html&gt;</strong> contiene todo el documento.
+                Dentro encontramos principalmente <strong>head</strong> y
+                <strong>body</strong>.
+            </p>
+
+            <p>
+                <strong>&lt;head&gt;</strong> contiene información de la página,
+                mientras que <strong>&lt;body&gt;</strong> contiene el contenido
+                que podemos ver directamente en el navegador.
+            </p>
+
+            <p class="text-muted">
+                En el siguiente tema aprenderás cómo los atributos permiten
+                agregar información y características a los elementos HTML.
+            </p>
+
+            <button type="button" class="btn btn-primary w-100 mt-3" onclick="siguienteTema()">
+                Siguiente
+            </button>
+
+        </div>
+        <div id="tema3" class="contenedor oculto">
+
+            <div class="logo">EDUDEBUG</div>
+
+            <h2 class="bienvenida-titulo">
+                Atributos y sintaxis
+            </h2>
+
+            <div class="d-flex justify-content-between mb-2">
+                <span>Progreso</span>
+                <span>60%</span>
+            </div>
+
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: 60%;">
+                </div>
+            </div>
+
+            <p class="text-muted">
+                Tema 3 de 5
+            </p>
+
+            <h4 class="mb-3">
+                ¿Qué son los atributos?
+            </h4>
+
+            <p>
+                Los atributos permiten agregar información o características
+                a una etiqueta HTML. Se escriben dentro de la etiqueta de
+                apertura y ayudan a indicar cómo debe funcionar o comportarse
+                un elemento.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+
+                <strong>Ejemplo:</strong>
+                <br><br>
+
+                &lt;a href="https://www.google.com"&gt;Ir a Google&lt;/a&gt;
+
+                <br><br>
+
+                <strong>Etiqueta:</strong> &lt;a&gt;
+                <br>
+
+                <strong>Atributo:</strong> href
+                <br>
+
+                <strong>Valor:</strong> "https://www.google.com"
+
+            </div>
+
+            <h4 class="mb-3">
+                ¿Cómo se escribe un atributo?
+            </h4>
+
+            <p>
+                La forma básica de escribir un atributo es:
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4 text-center">
+                <strong>clave="valor"</strong>
+            </div>
+
+            <p>
+                Es importante utilizar el signo <strong>=</strong> y colocar
+                el valor entre comillas.
+            </p>
+
+            <p>
+                Por ejemplo, en <strong>href="https://www.google.com"</strong>,
+                <strong>href</strong> es la clave y
+                <strong>"https://www.google.com"</strong> es el valor.
+            </p>
+
+            <p class="text-muted">
+                En el siguiente tema aprenderás las etiquetas más utilizadas
+                para crear diferentes tipos de contenido en una página web.
+            </p>
+
+            <button type="button" class="btn btn-primary w-100 mt-3" onclick="siguienteTema()">
+                Siguiente
+            </button>
+
+        </div>
+        <div id="tema4" class="contenedor oculto">
+
+            <div class="logo">EDUDEBUG</div>
+
+            <h2 class="bienvenida-titulo">
+                Etiquetas fundamentales
+            </h2>
+
+            <div class="d-flex justify-content-between mb-2">
+                <span>Progreso</span>
+                <span>80%</span>
+            </div>
+
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: 80%;">
+                </div>
+            </div>
+
+            <p class="text-muted">
+                Tema 4 de 5
+            </p>
+
+            <h4 class="mb-3">
+                Etiquetas para crear contenido
+            </h4>
+
+            <p>
+                Las etiquetas HTML permiten crear y organizar los diferentes
+                elementos que aparecen en una página web. Cada una tiene una
+                función diferente.
+            </p>
+
+            <h5 class="mt-4">Texto</h5>
+
+            <p>
+                Para crear títulos podemos utilizar las etiquetas
+                <strong>&lt;h1&gt;</strong> hasta <strong>&lt;h6&gt;</strong>.
+                Para escribir párrafos utilizamos <strong>&lt;p&gt;</strong>.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                &lt;h1&gt;Mi página web&lt;/h1&gt;
+                <br>
+                &lt;p&gt;Este es mi primer párrafo.&lt;/p&gt;
+            </div>
+
+            <h5 class="mt-4">Enlaces e imágenes</h5>
+
+            <p>
+                La etiqueta <strong>&lt;a&gt;</strong> permite crear enlaces
+                hacia otras páginas. La etiqueta <strong>&lt;img&gt;</strong>
+                permite mostrar imágenes.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                &lt;a href="https://www.google.com"&gt;Google&lt;/a&gt;
+                <br><br>
+                &lt;img src="imagen.jpg" alt="Mi imagen"&gt;
+            </div>
+
+            <h5 class="mt-4">Listas</h5>
+
+            <p>
+                También podemos crear listas. La etiqueta
+                <strong>&lt;ul&gt;</strong> crea una lista sin orden y
+                <strong>&lt;ol&gt;</strong> crea una lista numerada.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                &lt;ul&gt;
+                <br>
+                &nbsp;&nbsp;&lt;li&gt;HTML&lt;/li&gt;
+                <br>
+                &nbsp;&nbsp;&lt;li&gt;CSS&lt;/li&gt;
+                <br>
+                &lt;/ul&gt;
+            </div>
+
+            <p class="text-muted">
+                En el último tema aprenderás cuáles son los errores más comunes
+                al escribir HTML y algunas buenas prácticas para evitarlos.
+            </p>
+
+            <button type="button" class="btn btn-primary w-100 mt-3" onclick="siguienteTema()">
+                Siguiente
+            </button>
+
+        </div>
+        <div id="tema5" class="contenedor oculto">
+
+            <div class="logo">EDUDEBUG</div>
+
+            <h2 class="bienvenida-titulo">
+                Errores comunes y buenas prácticas
+            </h2>
+
+            <div class="d-flex justify-content-between mb-2">
+                <span>Progreso</span>
+                <span>100%</span>
+            </div>
+
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: 100%;">
+                </div>
+            </div>
+
+            <p class="text-muted">
+                Tema 5 de 5
+            </p>
+
+            <h4 class="mb-3">
+                Evita errores al escribir HTML
+            </h4>
+
+            <p>
+                Cuando estamos aprendiendo HTML es normal cometer algunos
+                errores. Lo importante es aprender a identificarlos y
+                corregirlos.
+            </p>
+
+            <h5 class="mt-4">1. No cerrar una etiqueta</h5>
+
+            <p>
+                Algunas etiquetas necesitan una etiqueta de cierre.
+                Por ejemplo:
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                <strong>Correcto:</strong>
+                <br>
+                &lt;p&gt;Hola mundo&lt;/p&gt;
+                <br><br>
+
+                <strong>Incorrecto:</strong>
+                <br>
+                &lt;p&gt;Hola mundo
+            </div>
+
+            <h5 class="mt-4">2. No cerrar las comillas</h5>
+
+            <p>
+                Cuando utilizamos atributos, debemos escribir correctamente
+                las comillas del valor.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                <strong>Correcto:</strong>
+                <br>
+                &lt;img src="imagen.jpg"&gt;
+                <br><br>
+
+                <strong>Incorrecto:</strong>
+                <br>
+                &lt;img src="imagen.jpg&gt;
+            </div>
+
+            <h5 class="mt-4">3. Ordenar correctamente las etiquetas</h5>
+
+            <p>
+                Cuando utilizamos varias etiquetas debemos respetar el orden
+                en el que se abren y se cierran.
+            </p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                <strong>Correcto:</strong>
+                <br>
+                &lt;p&gt;&lt;strong&gt;Hola&lt;/strong&gt;&lt;/p&gt;
+                <br><br>
+
+                <strong>Incorrecto:</strong>
+                <br>
+                &lt;p&gt;&lt;strong&gt;Hola&lt;/p&gt;&lt;/strong&gt;
+            </div>
+
+            <h5 class="mt-4">Una buena práctica</h5>
+
+            <p>
+                Mantener el código ordenado y utilizar una buena indentación
+                facilita encontrar errores y entender lo que estamos haciendo.
+            </p>
+
+            <p class="text-muted">
+                ¡Ya terminaste la teoría básica de HTML! Ahora podrás poner
+                en práctica lo aprendido en el editor de EDUDEBUG.
+            </p>
+
+            <button type="button" class="btn btn-primary w-100 mt-3" onclick="terminarTeoria()">
+                Ir al catálogo de cursos
+            </button>
+
+        </div>
+    </section>
+
+
+    <!-- ============================================ -->
+    <!-- PANTALLA DE CATALOGO DE CURSOS -->
+    <!-- ============================================ -->
+
+    <div id="pantallaCatalogo" class="pantalla oculto">
+
+        <div class="catalogo-contenedor">
+
+            <div class="profesor-nav">
+                <div class="logo">&lt;/&gt; EDUDEBUG</div>
+                <div class="profesor-nav-botones">
+                    <button class="btn-perfil" onclick="mostrarPerfil()">Mi perfil</button>
+                </div>
+            </div>
+
+            <div class="catalogo-encabezado">
+                <h2 class="mb-1">Catálogo de cursos</h2>
+                <p class="text-muted mb-0">Elige un curso y sigue practicando.</p>
+            </div>
+
+            <div class="catalogo-grid" id="catalogoGrid">
+                <!-- Las tarjetas de los cursos se generan desde el JavaScript -->
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ============================================ -->
+    <!-- PANTALLA DE EDITOR-->
+    <!-- ============================================ -->
+
+    <div id="pantallaEditor" class="pantalla oculto">
+
+        <div class="editor-contenedor">
+
+            <div class="editor-encabezado">
+                <div>
+                    <div class="logo">EDUDEBUG</div>
+
+                    <h2>
+                        Practica en el editor
+                    </h2>
+
+                    <p>
+                        Escribe tu código HTML y descubre tus errores.
+                    </p>
+                </div>
+
+                <div class="editor-opciones">
+                    <button class="btn-perfil" onclick="mostrarCatalogo()">
+                        Catálogo
+                    </button>
+
+                    <button class="btn-perfil" onclick="mostrarPerfil()">
+                        Mi perfil
+                    </button>
+
+                    <div class="editor-estado">HTML</div>
+                </div>
+            </div>
+
+            <div class="editor-area">
+
+                <div class="codigo-panel">
+
+                    <div class="panel-titulo">
+                        <span>Tu código HTML</span>
+                        <span class="punto"></span>
+                    </div>
+
+                    <textarea id="codigoHTML" class="codigo-editor" rows="15"
+                        placeholder="Escribe tu código HTML aquí..."></textarea>
+
+                    <button type="button" class="btn btn-primary btn-validar" onclick="validarCodigo()">
+
+                        Validar código
+
+                    </button>
+
+                </div>
+
+                <div class="resultado-panel">
+
+                    <div class="panel-titulo">
+                        Resultado
+                    </div>
+
+                    <div id="resultadoEditor" class="resultado-contenido">
+
+                        <div class="resultado-vacio">
+                            <div class="resultado-icono">
+                                ✓
+                            </div>
+
+                            <h5>
+                                Listo para revisar
+                            </h5>
+
+                            <p>
+                                Escribe tu código y presiona
+                                <strong>Validar código</strong>.
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+    <!-- ============================================ -->
+    <!-- PANTALLA DE PERFIL-->
+    <!-- ============================================ -->
+
+
+    <div id="pantallaPerfil" class="pantalla oculto">
+
+        <div class="perfil-contenedor">
+
+            <div class="perfil-encabezado">
+                <button class="btn-volver-perfil" onclick="volverAlEditor()">
+                    ← Volver al editor
+                </button>
+
+                <div class="logo">EDUDEBUG</div>
+            </div>
+
+            <div class="perfil-presentacion">
+
+                <div class="perfil-avatar" id="avatarPerfilEstudiante">
+                    JF
+                </div>
+
+                <h2 id="nombrePerfilEstudiante">Mi perfil</h2>
+
+                <p id="correoPerfilEstudiante">
+                    Aquí puedes consultar tu información y tu progreso en EDUDEBUG.
+                </p>
+
+            </div>
+
+            <div class="perfil-informacion">
+
+                <div class="perfil-dato">
+                    <span>Nombre</span>
+                    <strong id="perfilNombre">—</strong>
+                </div>
+
+                <div class="perfil-dato">
+                    <span>Correo</span>
+                    <strong id="perfilCorreo">—</strong>
+                </div>
+
+                <div class="perfil-dato">
+                    <span>Tipo de usuario</span>
+                    <strong>Estudiante</strong>
+                </div>
+
+            </div>
+
+            <div class="perfil-progreso">
+
+                <h3>Mi progreso</h3>
+
+                <div class="progreso-tarjetas">
+
+                    <div class="progreso-card">
+                        <span>Diagnóstico</span>
+                        <strong id="perfilPuntaje">Sin hacer</strong>
+                    </div>
+
+                    <div class="progreso-card">
+                        <span>Teoría</span>
+                        <strong>5 temas</strong>
+                    </div>
+
+                    <div class="progreso-card">
+                        <span>Errores corregidos</span>
+                        <strong id="perfilErrores">0</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="perfil-progreso mt-3">
+
+                <h3>Recomendado para ti</h3>
+
+                <div id="perfilRecomendaciones" class="text-muted">
+                    Todavía no tenemos recomendaciones.
+                </div>
+
+            </div>
+
+            <div class="perfil-progreso mt-3">
+
+                <h3>Mi actividad reciente</h3>
+
+                <div id="perfilActividad" class="text-muted">
+                    Cargando...
+                </div>
+
+            </div>
+
+            <div class="botones mt-3">
+                <button class="btn btn-outline-primary" onclick="alert('Esta función se agregará próximamente.')">Editar perfil</button>
+                <button class="btn btn-primary" onclick="cerrarSesion()">Cerrar sesión</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA PANEL DE PROGRESO (PROFESOR) -->
+    <!-- ================================================= -->
+
+    <div id="pantallaPanelProfesor" class="pantalla oculto">
+
+        <div class="panel-profesor-contenedor">
+
+            <div class="profesor-nav">
+                <div class="logo">&lt;/&gt; EDUDEBUG</div>
+                <div class="profesor-nav-botones">
+                    <button class="activo" onclick="mostrarPanelProfesor()">Panel</button>
+                    <button onclick="mostrarGestionCursos()">Cursos</button>
+                    <button onclick="mostrarPerfilProfesor()">Perfil</button>
+                </div>
+            </div>
+
+            <h2 class="mb-1">Panel de progreso</h2>
+            <p id="panelSubtitulo" class="text-muted mb-4">Así va tu grupo.</p>
+
+            <div class="estadisticas-profesor">
+                <div class="estadistica-card">
+                    <strong id="statActivos">0</strong>
+                    <span>Estudiantes activos</span>
+                </div>
+                <div class="estadistica-card">
+                    <strong id="statPromedio">0%</strong>
+                    <span>Promedio de progreso</span>
+                </div>
+                <div class="estadistica-card">
+                    <strong id="statErrores">0</strong>
+                    <span>Errores detectados</span>
+                </div>
+            </div>
+
+            <div class="paneles-profesor">
+
+                <div class="tarjeta-profesor">
+                    <h3>Progreso por estudiante</h3>
+                    <div id="listaEstudiantesProfesor"></div>
+                </div>
+
+                <div class="tarjeta-profesor">
+                    <h3>Top 3 errores más cometidos</h3>
+                    <div id="listaTopErroresProfesor"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA GESTION DE CURSOS -->
+    <!-- ================================================= -->
+
+    <div id="pantallaGestionCursos" class="pantalla oculto">
+
+        <div class="gestion-cursos-contenedor">
+
+            <div class="profesor-nav">
+                <div class="logo">&lt;/&gt; EDUDEBUG</div>
+                <div class="profesor-nav-botones">
+                    <button onclick="mostrarPanelProfesor()">Panel</button>
+                    <button class="activo" onclick="mostrarGestionCursos()">Cursos</button>
+                    <button onclick="mostrarPerfilProfesor()">Perfil</button>
+                </div>
+            </div>
+
+            <div class="gestion-cursos-encabezado">
+                <div>
+                    <h2 class="mb-1">Gestión de cursos</h2>
+                    <p class="text-muted mb-0">Administra los cursos disponibles en la plataforma.</p>
+                </div>
+                <button class="btn btn-primary" onclick="abrirFormularioCurso()">Crear curso</button>
+            </div>
+
+            <div class="lista-cursos" id="listaCursos"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA CREAR / EDITAR CURSO -->
+    <!-- ================================================= -->
+
+    <div id="pantallaCrearCurso" class="pantalla oculto">
+
+        <div class="contenedor-formulario">
+
+            <div class="logo">&lt;/&gt; EDUDEBUG</div>
+
+            <h2 id="tituloFormularioCurso">Crear curso</h2>
+            <p>Completa la información del curso.</p>
+
+            <form id="formCurso">
+
+                <input type="hidden" id="cursoId">
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre del curso</label>
+                    <input type="text" id="cursoNombre" class="form-control" placeholder="Ej: HTML Básico" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea id="cursoDescripcion" class="form-control" rows="3" placeholder="Describe brevemente el curso" required></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nivel</label>
+                    <select id="cursoNivel" class="form-control">
+                        <option value="Inicial">Inicial</option>
+                        <option value="Intermedio">Intermedio</option>
+                        <option value="Avanzado">Avanzado</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Estado</label>
+                    <select id="cursoEstado" class="form-control">
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    Guardar curso
+                </button>
+
+            </form>
+
+            <button class="btn-volver" onclick="mostrarGestionCursos()">
+                ← Cancelar
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA PERFIL DEL PROFESOR -->
+    <!-- ================================================= -->
+
+    <div id="pantallaPerfilProfesor" class="pantalla oculto">
+
+        <div class="perfil-contenedor">
+
+            <div class="perfil-encabezado">
+                <button class="btn-volver-perfil" onclick="mostrarPanelProfesor()">
+                    ← Volver al panel
+                </button>
+
+                <div class="logo">EDUDEBUG</div>
+            </div>
+
+            <div class="perfil-presentacion">
+
+                <div class="perfil-avatar" id="avatarPerfilProfesor">
+                    P
+                </div>
+
+                <h2 id="nombrePerfilProfesor">Mi perfil</h2>
+
+                <p id="correoPerfilProfesor">
+                    correo@ejemplo.com
+                </p>
+
+            </div>
+
+            <div class="perfil-informacion">
+
+                <div class="perfil-dato">
+                    <span>Nombre</span>
+                    <strong id="perfilNombreProfesor">—</strong>
+                </div>
+
+                <div class="perfil-dato">
+                    <span>Correo</span>
+                    <strong id="perfilCorreoProfesor">—</strong>
+                </div>
+
+                <div class="perfil-dato">
+                    <span>Tipo de usuario</span>
+                    <strong>Profesor</strong>
+                </div>
+
+            </div>
+
+            <div class="botones mt-3">
+                <button class="btn btn-outline-primary" onclick="alert('Esta función se agregará próximamente.')">Editar perfil</button>
+                <button class="btn btn-primary" onclick="cerrarSesion()">Cerrar sesión</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ================================================= -->
+
+    <script src="script.js"></script>
+
+
+</body>
+
+</html>
