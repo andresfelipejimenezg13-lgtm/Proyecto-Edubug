@@ -42,6 +42,8 @@ Sin `MONGO_URI` la app sigue funcionando con SQLite; los endpoints NoSQL respond
 Si Mongo falla en medio de una petición, la bitácora se omite en silencio y la operación principal no se rompe.
 Las colecciones e índices se crean solos en el primer uso.
 
+> **Nota para quien clone este repositorio.** El archivo `.env` (con la contraseña real de Atlas) **no se sube a GitHub** a propósito: es información secreta. Por eso el repositorio solo incluye la plantilla `.env.example`. Para ejecutar el proyecto hay que copiarla como `.env` y completar `SECRET_KEY` y `MONGO_URI` con una cadena de conexión propia. Los datos de la aplicación no están en el repositorio: viven en MongoDB Atlas (NoSQL) y en el archivo local de SQLite (SQL, ignorado por Git). Las capturas de `docs/capturas/` muestran la aplicación funcionando contra un clúster real de Atlas.
+
 ## 4. Operaciones CRUD sobre MongoDB
 | Operación | Endpoint | Colección |
 |---|---|---|
@@ -72,12 +74,39 @@ Cuentas demo: `estudiante@edudebug.com` / `profesor@edudebug.com`, clave `123456
 Si vienes de una versión anterior, borra la carpeta `instance/`.
 
 ## 7. Pruebas y evidencias de ejecución
-- **Pruebas automáticas:** `python -m pytest -q` → 66 pruebas (46 de la API SQL + 20 de la capa NoSQL; usan MongoDB simulado con `mongomock`). Resultado: `docs/resultado_pruebas.txt`.
-- **Flujo completo impreso:** `python scripts/demo_evidencia.py` (usa tu Atlas si hay `MONGO_URI`). Guarda la salida con
-  `python scripts/demo_evidencia.py > docs/evidencia_atlas.txt`.
-- **Postman:** importar `postman/EDUDEBUG.postman_collection.json`; la carpeta *5. NoSQL* contiene las peticiones nuevas.
-- Incluido en `docs/`: `evidencia_ejecucion_simulada.txt` (corrida con Mongo **simulado** en memoria) y la captura `capturas/perfil-actividad-simulado.png`.
-- **Pendiente del equipo:** capturas de Atlas/Compass con las colecciones `actividad_usuario` y `comentarios_modulo`, y de Postman, guardadas en `docs/capturas/`.
+**Evidencias reales (MongoDB Atlas):**
+- Salida impresa del flujo completo contra Atlas: [`docs/evidencia_atlas.txt`](docs/evidencia_atlas.txt) (generada con `python scripts/demo_evidencia.py`).
+- Capturas de Postman y de Atlas, en `docs/capturas/`:
+
+| # | Qué muestra | Archivo |
+|---|---|---|
+| 1 | Salud: SQLite y MongoDB responden `ok` | [01 salud.png](docs/capturas/01%20salud.png) |
+| 2 | Login del estudiante (se registra el evento `login` en Mongo) | [02 login.png](docs/capturas/02%20login.png) |
+| 3 | Depurador: errores detectados y recomendación (SQL) + evento en Mongo | [03 depurador.png](docs/capturas/03%20depurador.png) |
+| 4 | Recomendaciones guardadas en SQL | [04 recomendaciones.png](docs/capturas/04%20recomendaciones.png) |
+| 5 | CREATE actividad (Mongo) | [05 crear actividad.png](docs/capturas/05%20crear%20actividad.png) |
+| 6 | READ actividad: últimas 10 | [06 listar actividad.png](docs/capturas/06%20listar%20actividad.png) |
+| 7 | READ actividad filtrada por tipo | [07 filtrar actividad.png](docs/capturas/07%20filtrar%20actividad.png) |
+| 8 | CREATE comentario (Mongo) | [08 crear comentario.png](docs/capturas/08%20crear%20comentario.png) |
+| 9 | READ comentarios del módulo (Mongo + autor desde SQL) | [09 listar comentarios.png](docs/capturas/09%20listar%20comentarios.png) |
+| 10 | READ de un comentario | [10 ver comentario.png](docs/capturas/10%20ver%20comentario.png) |
+| 11 | UPDATE comentario | [11 editar comentario.png](docs/capturas/11%20editar%20comentario.png) |
+| 12 | UPDATE parcial con `$inc` (reacciones) | [12 reaccion.png](docs/capturas/12%20reaccion.png) |
+| 13 | **Endpoint combinado SQL + NoSQL** (parte 1) | [13a perfil completo.png](docs/capturas/13a%20perfil%20completo.png) |
+| 14 | **Endpoint combinado SQL + NoSQL** (parte 2) | [13b perfil completo.png](docs/capturas/13b%20perfil%20completo.png) |
+| 15 | Colección `actividad_usuario` en MongoDB Atlas | [14 atlas actividad usuario.png](docs/capturas/14%20atlas%20actividad%20usuario.png) |
+| 16 | Colección `comentarios_modulo` en MongoDB Atlas | [15 atlas comentarios modulo.png](docs/capturas/15%20atlas%20comentarios%20modulo.png) |
+| 17 | DELETE comentario | [16 eliminar comentario.png](docs/capturas/16%20eliminar%20comentario.png) |
+| 18 | DELETE actividad | [17 eliminar actividad.png](docs/capturas/17%20eliminar%20actividad.png) |
+| 19 | `python -m pytest -q`: 66 pruebas pasando | [18 pruebas.png](docs/capturas/18%20pruebas.png) |
+
+**Pruebas automáticas:** `python -m pytest -q` → 66 pruebas (46 de la API SQL + 20 de la capa NoSQL; usan MongoDB simulado con `mongomock`). Resultado en `docs/resultado_pruebas.txt`.
+
+**Postman:** importar `postman/EDUDEBUG.postman_collection.json`; la carpeta *5. NoSQL* contiene las peticiones de MongoDB. En el cuerpo de *Responder* (diagnóstico) escribir los ids como números sin comillas.
+
+**Material simulado (no es de Atlas):** `docs/evidencia_ejecucion_simulada.txt` y `docs/capturas/perfil-actividad-simulado.png` se generaron con MongoDB simulado en memoria.
+
+**Autores:** Andrés Felipe Jiménez Gaitán y Dylan Santiago Martínez Millares · Nuevas Tecnologías · Docente: Leandro Pájaro Fuentes.
 
 ## 8. Estructura del proyecto
 `app.py`, `config.py` · `models/` (SQLite, `mongo_db.py` conexión, `documentos.py` acceso a colecciones) · `controllers/` (endpoints) ·
