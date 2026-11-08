@@ -19,15 +19,17 @@ from data.modulos_html import CURSO_HTML, MODULOS_HTML
 TIPOS_ERROR = ("etiqueta_sin_cerrar", "atributo_sin_comillas", "etiqueta_en_mayusculas")
 _TIPOS_SQL = ", ".join(f"'{tipo}'" for tipo in TIPOS_ERROR)
 
-ESQUEMA = f"""
-CREATE TABLE IF NOT EXISTS usuarios (
+COLUMNAS_USUARIOS = """(
     id_usuario     INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre         TEXT NOT NULL,
     email          TEXT NOT NULL UNIQUE,
     password_hash  TEXT NOT NULL,
-    rol            TEXT NOT NULL CHECK (rol IN ('estudiante', 'profesor')),
+    rol            TEXT NOT NULL CHECK (rol IN ('estudiante', 'profesor', 'admin')),
     fecha_registro TEXT NOT NULL DEFAULT (datetime('now'))
-);
+)"""
+
+ESQUEMA = f"""
+CREATE TABLE IF NOT EXISTS usuarios {COLUMNAS_USUARIOS};
 
 CREATE TABLE IF NOT EXISTS cursos (
     id_curso    INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,6 +121,26 @@ CREATE INDEX IF NOT EXISTS ix_recomendaciones_u  ON recomendaciones(id_usuario);
 """
 
 
+def _migrar_rol_admin(conexion):
+    """Bases creadas antes de la Entrega 3 solo permitían 'estudiante' y 'profesor'.
+    SQLite no deja modificar un CHECK, así que se reconstruye la tabla conservando todos los datos."""
+    fila = conexion.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuarios'").fetchone()
+    if fila is None or "'admin'" in fila["sql"]:
+        return
+    conexion.commit()
+    conexion.execute("PRAGMA foreign_keys = OFF")
+    conexion.executescript(f"""
+        BEGIN;
+        CREATE TABLE usuarios_nueva {COLUMNAS_USUARIOS};
+        INSERT INTO usuarios_nueva (id_usuario, nombre, email, password_hash, rol, fecha_registro)
+            SELECT id_usuario, nombre, email, password_hash, rol, fecha_registro FROM usuarios;
+        DROP TABLE usuarios;
+        ALTER TABLE usuarios_nueva RENAME TO usuarios;
+        COMMIT;
+    """)
+    conexion.execute("PRAGMA foreign_keys = ON")
+
+
 def conectar(ruta):
     if ruta != ":memory:":
         os.makedirs(os.path.dirname(os.path.abspath(ruta)), exist_ok=True)
@@ -158,6 +180,7 @@ def _sembrar_usuarios_demo(conexion):
     for nombre, email, rol in (
         ("Estudiante Demo", "estudiante@edudebug.com", "estudiante"),
         ("Profesor Demo", "profesor@edudebug.com", "profesor"),
+        ("Administrador Demo", "admin@edudebug.com", "admin"),
     ):
         existe = conexion.execute("SELECT 1 FROM usuarios WHERE email = ?", (email,)).fetchone()
         if not existe:
@@ -165,6 +188,14 @@ def _sembrar_usuarios_demo(conexion):
                 "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (?, ?, ?, ?)",
                 (nombre, email, generate_password_hash("123456"), rol),
             )
+
+
+def _sembrar_admin(conexion, email, password):
+    if email and password and not conexion.execute("SELECT 1 FROM usuarios WHERE email = ?", (email,)).fetchone():
+        conexion.execute(
+            "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (?, ?, ?, 'admin')",
+            ("Administrador", email, generate_password_hash(password)),
+        )
 
 
 def init_app(app):
@@ -181,10 +212,13 @@ def init_app(app):
             )
 
         conexion.executescript(ESQUEMA)
+        _migrar_rol_admin(conexion)
+        conexion.executescript(ESQUEMA)  # recrea índices que la migración pudiera haber eliminado
         conexion.execute("BEGIN IMMEDIATE")
         if conexion.execute("PRAGMA user_version").fetchone()[0] == 0:
             _sembrar_curso(conexion)  # solo al crear la base: si el profesor borra el curso, no reaparece
             conexion.execute("PRAGMA user_version = 1")
         if app.config["SEED_DEMO"]:
             _sembrar_usuarios_demo(conexion)
+        _sembrar_admin(conexion, app.config["ADMIN_EMAIL"], app.config["ADMIN_PASSWORD"])
         conexion.commit()

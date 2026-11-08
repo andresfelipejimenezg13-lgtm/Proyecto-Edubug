@@ -67,7 +67,7 @@ def progreso_estudiante(conexion, id_usuario):
 
 def pantalla_inicial(conexion, usuario):
     """A dónde lleva el servidor al usuario al entrar: panel, diagnóstico o catálogo."""
-    if usuario["rol"] == "profesor":
+    if usuario["rol"] in ("profesor", "admin"):
         return "panel"
     return "catalogo" if nivel_actual(conexion, usuario["id_usuario"]) else "diagnostico"
 

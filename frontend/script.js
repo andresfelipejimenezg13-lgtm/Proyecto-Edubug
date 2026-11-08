@@ -124,6 +124,20 @@ async function api(ruta, opciones) {
     return datos;
 }
 
+// Misma regla que el servidor: 8 caracteres o más, con al menos una letra y un número
+function contrasenaValida(password) {
+    return password.length >= 8 && /[A-Za-z]/.test(password) && /\d/.test(password);
+}
+
+// Los botones marcados con "solo-admin" únicamente se ven con el rol administrador
+function aplicarRolEnMenus() {
+    let sesion = obtenerSesion();
+    let esAdmin = !!sesion && sesion.rol === "admin";
+    document.querySelectorAll(".solo-admin").forEach(function (boton) {
+        boton.classList.toggle("oculto", !esAdmin);
+    });
+}
+
 function capitalizar(texto) {
     return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
@@ -187,12 +201,12 @@ document.getElementById("formRegistro").addEventListener("submit", async functio
 
     let nombre = document.getElementById("nombre").value.trim();
     let email = document.getElementById("correo").value.trim().toLowerCase();
-    let rol = document.querySelector('input[name="tipoUsuario"]:checked').value;
+    let rol = "estudiante"; // el registro público solo crea estudiantes; profesor y admin los crea un administrador
     let password = document.getElementById("password").value;
     let confirmarPassword = document.getElementById("confirmarPassword").value;
 
-    if (password.length < 6) {
-        alert("La contraseña debe tener mínimo 6 caracteres.");
+    if (!contrasenaValida(password)) {
+        alert("La contraseña debe tener mínimo 8 caracteres, con letras y números.");
         return;
     }
 
@@ -746,6 +760,8 @@ function volverAlEditor() {
 
 async function mostrarPanelProfesor() {
 
+    aplicarRolEnMenus();
+
     try {
         let cursos = (await api("/api/cursos")).cursos;
 
@@ -858,6 +874,8 @@ async function dibujarListaCursos() {
 
 async function mostrarGestionCursos() {
 
+    aplicarRolEnMenus();
+
     try {
         await dibujarListaCursos();
         mostrarPantalla("pantallaGestionCursos");
@@ -954,10 +972,113 @@ document.getElementById("formCurso").addEventListener("submit", async function (
 
 
 // ============================================
+// ADMINISTRADOR - USUARIOS Y ROLES
+// ============================================
+
+const NOMBRES_ROL = { estudiante: "Estudiante", profesor: "Profesor", admin: "Administrador" };
+
+async function mostrarAdminUsuarios() {
+
+    aplicarRolEnMenus();
+
+    try {
+        await dibujarListaUsuarios();
+        mostrarPantalla("pantallaAdminUsuarios");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function dibujarListaUsuarios() {
+
+    let datos = await api("/api/admin/usuarios");
+    let miId = obtenerSesion().id;
+    let lista = document.getElementById("listaUsuarios");
+    lista.innerHTML = "";
+
+    datos.usuarios.forEach(function (u) {
+
+        let item = document.createElement("div");
+        item.className = "curso-item";
+
+        let info = document.createElement("div");
+        let nombre = document.createElement("h4");
+        nombre.textContent = u.nombre + (u.id === miId ? " (tú)" : "");
+        let correo = document.createElement("p");
+        correo.textContent = u.email;
+        info.appendChild(nombre);
+        info.appendChild(correo);
+
+        let acciones = document.createElement("div");
+        acciones.className = "curso-acciones";
+
+        let selector = document.createElement("select");
+        selector.className = "form-select";
+        selector.disabled = u.id === miId; // nadie puede cambiarse su propio rol
+        Object.keys(NOMBRES_ROL).forEach(function (rol) {
+            let opcion = document.createElement("option");
+            opcion.value = rol;
+            opcion.textContent = NOMBRES_ROL[rol];
+            opcion.selected = rol === u.rol;
+            selector.appendChild(opcion);
+        });
+
+        let guardar = document.createElement("button");
+        guardar.textContent = "Guardar rol";
+        guardar.disabled = u.id === miId;
+        guardar.onclick = function () { cambiarRolUsuario(u.id, selector.value); };
+
+        acciones.appendChild(selector);
+        acciones.appendChild(guardar);
+        item.appendChild(info);
+        item.appendChild(acciones);
+        lista.appendChild(item);
+    });
+}
+
+async function cambiarRolUsuario(idUsuario, rol) {
+
+    try {
+        await api("/api/admin/usuarios/" + idUsuario + "/rol", { method: "PUT", body: { rol: rol } });
+        await dibujarListaUsuarios();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+document.getElementById("formAdminUsuario").addEventListener("submit", async function (event) {
+
+    event.preventDefault();
+
+    let cuerpo = {
+        nombre: document.getElementById("adminNombre").value.trim(),
+        email: document.getElementById("adminEmail").value.trim().toLowerCase(),
+        password: document.getElementById("adminPassword").value,
+        rol: document.getElementById("adminRol").value
+    };
+
+    if (!contrasenaValida(cuerpo.password)) {
+        alert("La contraseña debe tener mínimo 8 caracteres, con letras y números.");
+        return;
+    }
+
+    try {
+        await api("/api/admin/usuarios", { method: "POST", body: cuerpo });
+        document.getElementById("formAdminUsuario").reset();
+        await dibujarListaUsuarios();
+    } catch (error) {
+        alert(error.message);
+    }
+});
+
+
+// ============================================
 // PROFESOR - PERFIL
 // ============================================
 
 function mostrarPerfilProfesor() {
+
+    aplicarRolEnMenus();
 
     let sesion = obtenerSesion();
 

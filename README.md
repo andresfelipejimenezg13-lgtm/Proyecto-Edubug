@@ -1,10 +1,36 @@
-# EDUDEBUG — Persistencia políglota (SQLite + MongoDB)
+# EDUDEBUG — Plataforma para aprender HTML (Entrega 3: Seguridad, Autenticación y Cierre)
 
 Plataforma para aprender HTML básico. Backend Flask (Python).
 - **SQL (SQLite, 11 tablas):** datos estructurados — usuarios, cursos, módulos, tests, envíos de código, errores, recomendaciones.
 - **NoSQL (MongoDB):** datos dinámicos y de alta frecuencia — bitácora de actividad y comentarios de los módulos.
 
-## 1. ¿Qué parte del problema se beneficia de NoSQL?
+
+## 0. Seguridad (Entrega 3)
+| Requisito | Cómo se cumple |
+|---|---|
+| **Hashing de contraseñas** | Registro y login con `werkzeug.security` (hash con sal aleatoria; la contraseña nunca se guarda ni se devuelve). Política: mínimo 8 caracteres con letras y números. |
+| **Autenticación con JWT** | `POST /api/auth/login` entrega un token firmado (HS256, `exp`, `iss=edudebug`) que se envía como `Authorization: Bearer <token>`. Sin token, vencido o manipulado → **401**. |
+| **Roles y permisos (RBAC)** | 3 roles: `estudiante`, `profesor`, `admin`. Rol equivocado → **403**. El rol se vuelve a leer de la base en cada petición: un token no puede "ascender" a nadie. |
+| **Protección extra** | Límite de intentos de login (5 fallos / 15 min → **429**), mensaje de error genérico (no revela qué correos existen), cabeceras de seguridad, el registro público solo crea estudiantes. |
+| **Documentación de la API** | Swagger interactivo en **`/api/docs`** (JSON en `/api/openapi.json`) y resumen en [`docs/API.md`](docs/API.md). Un test verifica que cubra todas las rutas reales. |
+| **Demo de los casos de uso** | Guion paso a paso de CU-01 a CU-06 en [`docs/DEMO_CASOS_DE_USO.md`](docs/DEMO_CASOS_DE_USO.md). |
+
+**Matriz de permisos**
+| Operación | Sin sesión | Estudiante | Profesor | Admin |
+|---|:-:|:-:|:-:|:-:|
+| Registro, login, `/api/salud`, `/api/docs` | ✅ | ✅ | ✅ | ✅ |
+| Ver cursos, comentar, actividad propia, recomendaciones propias | ❌ 401 | ✅ | ✅ | ✅ |
+| Diagnóstico y depurador (CU-02, CU-03) | ❌ 401 | ✅ | ❌ 403 | ❌ 403 |
+| Crear/editar/borrar cursos y módulos (CU-06), panel de progreso (CU-05) | ❌ 401 | ❌ 403 | ✅ | ✅ |
+| Moderar (borrar) comentarios ajenos | ❌ 401 | ❌ 403 | ✅ | ✅ |
+| Crear cuentas de profesor/admin y cambiar roles (`/api/admin/*`) | ❌ 401 | ❌ 403 | ❌ 403 | ✅ |
+
+**Cuentas demo** (clave `123456`, solo con `SEED_DEMO=1`): `estudiante@edudebug.com`, `profesor@edudebug.com`, `admin@edudebug.com`. En producción pon `SEED_DEMO=0` y define `ADMIN_EMAIL` / `ADMIN_PASSWORD` en el `.env`.
+Si ya tenías una base de datos anterior, se actualiza sola al arrancar (agrega el rol `admin` sin perder datos).
+
+**Variables de seguridad** (`.env`): `SECRET_KEY` (firma los tokens), `TOKEN_HORAS`, `LOGIN_MAX_INTENTOS`, `LOGIN_VENTANA_MIN`.
+
+## 1. ¿Qué parte del problema se beneficia de NoSQL? (Entrega 2)
 | Dato | Por qué no encaja en tablas | Colección |
 |---|---|---|
 | Bitácora de actividad (login, test, envíos, temas vistos…) | Alto volumen de escrituras; cada tipo de evento guarda campos distintos (`detalle` variable); solo se inserta y se consulta por usuario y fecha | `actividad_usuario` |
@@ -70,7 +96,7 @@ pip install -r requirements-dev.txt
 copy .env.example .env        # y completa MONGO_URI
 flask --app app run --debug   # http://127.0.0.1:5000
 ```
-Cuentas demo: `estudiante@edudebug.com` / `profesor@edudebug.com`, clave `123456`.
+Cuentas demo: `estudiante@`, `profesor@` y `admin@edudebug.com`, clave `123456`. Documentación interactiva: http://127.0.0.1:5000/api/docs
 Si vienes de una versión anterior, borra la carpeta `instance/`.
 
 ## 7. Pruebas y evidencias de ejecución
@@ -100,9 +126,9 @@ Si vienes de una versión anterior, borra la carpeta `instance/`.
 | 18 | DELETE actividad | [17 eliminar actividad.png](docs/capturas/17%20eliminar%20actividad.png) |
 | 19 | `python -m pytest -q`: 66 pruebas pasando | [18 pruebas.png](docs/capturas/18%20pruebas.png) |
 
-**Pruebas automáticas:** `python -m pytest -q` → 66 pruebas (46 de la API SQL + 20 de la capa NoSQL; usan MongoDB simulado con `mongomock`). Resultado en `docs/resultado_pruebas.txt`.
+**Pruebas automáticas:** `python -m pytest -q` → 108 pruebas (API SQL, capa NoSQL, 39 de seguridad/RBAC y 3 de la documentación; usan MongoDB simulado con `mongomock`). Resultado en `docs/resultado_pruebas.txt`.
 
-**Postman:** importar `postman/EDUDEBUG.postman_collection.json`; la carpeta *5. NoSQL* contiene las peticiones de MongoDB. En el cuerpo de *Responder* (diagnóstico) escribir los ids como números sin comillas.
+**Postman:** importar `postman/EDUDEBUG.postman_collection.json`; la carpeta *5. NoSQL* contiene las peticiones de MongoDB y la carpeta *6. Seguridad y roles* prueba 401/403/409 y el flujo del administrador (ejecutarla en orden). En el cuerpo de *Responder* (diagnóstico) escribir los ids como números sin comillas.
 
 **Material simulado (no es de Atlas):** `docs/evidencia_ejecucion_simulada.txt` y `docs/capturas/perfil-actividad-simulado.png` se generaron con MongoDB simulado en memoria.
 
@@ -113,6 +139,16 @@ Si vienes de una versión anterior, borra la carpeta `instance/`.
 `services/` (diagnóstico adaptativo, depurador, recomendaciones, progreso, `actividad.py` bitácora) · `data/` · `frontend/` · `tests/` · `scripts/` · `postman/` · `docs/`.
 
 ## 9. Despliegue en Render
-Build `pip install -r requirements.txt` · Start `gunicorn "app:create_app()"` · variables `SECRET_KEY`, `MONGO_URI`, `MONGO_DB`.
+Build `pip install -r requirements.txt` · Start `gunicorn "app:create_app()"` · variables `SECRET_KEY` (larga y secreta), `MONGO_URI`, `MONGO_DB`, `SEED_DEMO=0`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
+El limitador de login vive en memoria de cada proceso (suficiente para este proyecto; para varios servidores se movería a Redis/Mongo).
 En Atlas permite el acceso desde Render (Network Access, p. ej. `0.0.0.0/0` para pruebas académicas).
 El disco gratuito de Render es efímero: SQLite se reinicia en cada despliegue; Mongo Atlas conserva sus datos.
+
+## 10. Evidencias de la Entrega 3
+| Qué muestra | Archivo |
+|---|---|
+| Registro solo de estudiantes y requisitos de contraseña | [20 registro con politica de contrasena.png](docs/capturas/20%20registro%20con%20politica%20de%20contrasena.png) |
+| Pantalla de administración: crear cuentas y cambiar roles (RBAC) | [21 admin usuarios y roles.png](docs/capturas/21%20admin%20usuarios%20y%20roles.png) |
+| 108 pruebas automáticas (39 de seguridad) | [`docs/resultado_pruebas.txt`](docs/resultado_pruebas.txt) |
+| Postman: carpeta *6. Seguridad y roles* (401/403/409/200) | Tomar captura del Runner y guardarla en `docs/capturas/22 postman seguridad.png` |
+| Swagger en `/api/docs` | Tomar captura y guardarla en `docs/capturas/23 swagger.png` |

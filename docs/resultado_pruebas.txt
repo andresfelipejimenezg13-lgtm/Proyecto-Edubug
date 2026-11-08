@@ -1,1 +1,109 @@
-66 passed in 29.52s
+tests/test_api.py::test_salud_sin_mongo_configurado PASSED
+tests/test_api.py::test_salud_con_la_conexion_a_mongo_lista PASSED
+tests/test_api.py::test_registro_y_login PASSED
+tests/test_api.py::test_registro_valida_campos PASSED
+tests/test_api.py::test_login_incorrecto PASSED
+tests/test_api.py::test_navegacion_inicial_por_rol PASSED
+tests/test_api.py::test_endpoints_protegidos PASSED
+tests/test_api.py::test_la_pagina_se_sirve_desde_flask PASSED
+tests/test_api.py::test_las_tablas_del_diagrama_existen PASSED
+tests/test_api.py::test_sqlite_tiene_claves_foraneas_y_restricciones PASSED
+tests/test_api.py::test_base_de_una_version_anterior_da_un_error_claro PASSED
+tests/test_api.py::test_iniciar_entrega_una_pregunta_sin_la_respuesta PASSED
+tests/test_api.py::test_la_dificultad_se_adapta_a_las_respuestas PASSED
+tests/test_api.py::test_regla_de_niveles
+tests/test_api.py::test_regla_de_niveles
+tests/test_api.py::test_regla_de_niveles
+tests/test_api.py::test_regla_de_niveles
+tests/test_api.py::test_regla_de_niveles
+tests/test_api.py::test_regla_de_niveles
+tests/test_api.py::test_no_repite_preguntas_y_reparte_los_temas PASSED
+tests/test_api.py::test_las_preguntas_rotan_entre_tests PASSED
+tests/test_api.py::test_las_opciones_se_mezclan PASSED
+tests/test_api.py::test_iniciar_retoma_el_test_abierto PASSED
+tests/test_api.py::test_responder_valida_los_datos PASSED
+tests/test_api.py::test_no_se_puede_responder_el_test_de_otro PASSED
+tests/test_api.py::test_doble_clic_no_duplica_nada PASSED
+tests/test_api.py::test_reenviar_la_ultima_respuesta_devuelve_el_mismo_resultado PASSED
+tests/test_api.py::test_el_perfil_refleja_el_diagnostico PASSED
+tests/test_api.py::test_codigo_correcto_no_tiene_errores PASSED
+tests/test_api.py::test_detecta_etiqueta_sin_cerrar_con_su_linea PASSED
+tests/test_api.py::test_detecta_cierre_sin_apertura PASSED
+tests/test_api.py::test_detecta_mayusculas PASSED
+tests/test_api.py::test_detecta_atributos_sin_comillas_y_comilla_abierta PASSED
+tests/test_api.py::test_las_comillas_simples_y_los_comentarios_no_dan_falsos_errores PASSED
+tests/test_api.py::test_mal_anidado_se_detecta PASSED
+tests/test_api.py::test_la_explicacion_se_adapta_al_nivel PASSED
+tests/test_api.py::test_el_envio_y_los_errores_se_guardan PASSED
+tests/test_api.py::test_el_depurador_valida_la_entrada PASSED
+tests/test_api.py::test_progreso_del_curso_y_errores_corregidos PASSED
+tests/test_api.py::test_recomendacion_por_errores_recurrentes PASSED
+tests/test_api.py::test_consultar_recomendaciones_y_permisos PASSED
+tests/test_api.py::test_catalogo_de_cursos PASSED
+tests/test_api.py::test_crud_de_cursos_solo_para_profesores PASSED
+tests/test_api.py::test_crud_de_modulos_y_borrado_en_cascada PASSED
+tests/test_api.py::test_borrar_un_modulo_recomendado_no_rompe PASSED
+tests/test_api.py::test_panel_del_profesor_con_datos_reales PASSED
+tests/test_docs.py::test_openapi_cubre_todas_las_rutas PASSED
+tests/test_docs.py::test_docs_publicas_y_swagger PASSED
+tests/test_docs.py::test_rutas_protegidas_marcan_seguridad PASSED
+tests/test_mongo.py::test_salud_con_mongo_ok PASSED
+tests/test_mongo.py::test_sin_mongo_los_endpoints_nosql_responden_503_y_el_resto_funciona PASSED
+tests/test_mongo.py::test_la_actividad_se_registra_sola PASSED
+tests/test_mongo.py::test_actividad_codigo_analizado_guarda_detalle_variable PASSED
+tests/test_mongo.py::test_registro_de_cuenta_nueva_queda_en_la_bitacora PASSED
+tests/test_mongo.py::test_diagnostico_completo_registra_respuestas_y_cierre PASSED
+tests/test_mongo.py::test_crud_actividad_manual PASSED
+tests/test_mongo.py::test_actividad_validaciones PASSED
+tests/test_mongo.py::test_no_se_puede_borrar_actividad_ajena PASSED
+tests/test_mongo.py::test_limite_de_actividad PASSED
+tests/test_mongo.py::test_crud_comentarios PASSED
+tests/test_mongo.py::test_comentario_validaciones PASSED
+tests/test_mongo.py::test_solo_el_autor_edita_y_el_profesor_modera PASSED
+tests/test_mongo.py::test_reacciones_crean_campos_dinamicos PASSED
+tests/test_mongo.py::test_comentario_resuelve_el_autor_desde_sql PASSED
+tests/test_mongo.py::test_perfil_completo_une_sql_y_mongo PASSED
+tests/test_mongo.py::test_perfil_completo_limita_a_10_actividades PASSED
+tests/test_mongo.py::test_perfil_completo_permisos PASSED
+tests/test_mongo.py::test_perfil_de_profesor_no_tiene_progreso PASSED
+tests/test_mongo.py::test_si_mongo_falla_la_peticion_principal_no_se_rompe PASSED
+tests/test_seguridad.py::test_la_contrasena_se_guarda_con_hash PASSED
+tests/test_seguridad.py::test_la_api_nunca_devuelve_el_hash PASSED
+tests/test_seguridad.py::test_politica_de_contrasenas
+tests/test_seguridad.py::test_politica_de_contrasenas
+tests/test_seguridad.py::test_politica_de_contrasenas
+tests/test_seguridad.py::test_politica_de_contrasenas
+tests/test_seguridad.py::test_contrasena_valida_se_acepta PASSED
+tests/test_seguridad.py::test_el_token_es_un_jwt_firmado_con_sus_claims PASSED
+tests/test_seguridad.py::test_token_valido_da_acceso PASSED
+tests/test_seguridad.py::test_tokens_invalidos_son_rechazados
+tests/test_seguridad.py::test_tokens_invalidos_son_rechazados
+tests/test_seguridad.py::test_tokens_invalidos_son_rechazados
+tests/test_seguridad.py::test_tokens_invalidos_son_rechazados
+tests/test_seguridad.py::test_token_sin_firma_alg_none_es_rechazado PASSED
+tests/test_seguridad.py::test_el_rol_del_token_no_da_privilegios PASSED
+tests/test_seguridad.py::test_token_de_cuenta_inexistente PASSED
+tests/test_seguridad.py::test_sin_cabecera_o_esquema_incorrecto PASSED
+tests/test_seguridad.py::test_bloqueo_tras_demasiados_intentos_fallidos PASSED
+tests/test_seguridad.py::test_un_login_correcto_reinicia_el_contador PASSED
+tests/test_seguridad.py::test_el_mensaje_de_login_no_revela_si_la_cuenta_existe PASSED
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_matriz_de_permisos_por_rol
+tests/test_seguridad.py::test_un_estudiante_no_ve_datos_de_otro PASSED
+tests/test_seguridad.py::test_registro_publico_no_puede_crear_profesor_ni_admin PASSED
+tests/test_seguridad.py::test_admin_crea_profesor_y_este_puede_iniciar_sesion PASSED
+tests/test_seguridad.py::test_admin_valida_los_datos_al_crear PASSED
+tests/test_seguridad.py::test_cambio_de_rol_se_aplica_de_inmediato_con_el_mismo_token PASSED
+tests/test_seguridad.py::test_reglas_de_seguridad_del_cambio_de_rol PASSED
+tests/test_seguridad.py::test_listar_usuarios_con_filtro PASSED
+tests/test_seguridad.py::test_admin_inicial_desde_variables_de_entorno PASSED
+tests/test_seguridad.py::test_una_base_anterior_sin_rol_admin_se_migra_sin_perder_datos PASSED
+tests/test_seguridad.py::test_cabeceras_de_seguridad PASSED
+============================= 108 passed in 49.58s =============================

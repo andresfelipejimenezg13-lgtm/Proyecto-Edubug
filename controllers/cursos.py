@@ -6,7 +6,7 @@ from models import curso as modelo_curso
 from models.sqlite_db import get_sqlite
 from services import actividad
 from services.errores import ErrorServicio
-from services.sesion import requiere_sesion
+from services.sesion import DOCENTES, requiere_sesion
 
 bp = Blueprint("cursos", __name__, url_prefix="/api")
 
@@ -71,7 +71,7 @@ def detalle(id_curso):
 
 
 @bp.post("/cursos")
-@requiere_sesion(rol="profesor")
+@requiere_sesion(rol=DOCENTES)
 def crear():
     nombre, descripcion, nivel, estado = _datos_curso(cuerpo_json())
     id_curso = modelo_curso.crear(get_sqlite(), nombre, descripcion, nivel, estado)
@@ -79,7 +79,7 @@ def crear():
 
 
 @bp.put("/cursos/<int:id_curso>")
-@requiere_sesion(rol="profesor")
+@requiere_sesion(rol=DOCENTES)
 def actualizar(id_curso):
     _curso_o_404(id_curso)
     nombre, descripcion, nivel, estado = _datos_curso(cuerpo_json())
@@ -88,7 +88,7 @@ def actualizar(id_curso):
 
 
 @bp.delete("/cursos/<int:id_curso>")
-@requiere_sesion(rol="profesor")
+@requiere_sesion(rol=DOCENTES)
 def eliminar(id_curso):
     _curso_o_404(id_curso)
     modelo_curso.eliminar(get_sqlite(), id_curso)
@@ -110,7 +110,7 @@ def _datos_modulo(datos, orden_obligatorio):
 
 
 @bp.post("/cursos/<int:id_curso>/modulos")
-@requiere_sesion(rol="profesor")
+@requiere_sesion(rol=DOCENTES)
 def crear_modulo(id_curso):
     _curso_o_404(id_curso)
     titulo, contenido, orden = _datos_modulo(cuerpo_json(), orden_obligatorio=False)
@@ -121,7 +121,7 @@ def crear_modulo(id_curso):
 
 
 @bp.put("/modulos/<int:id_modulo>")
-@requiere_sesion(rol="profesor")
+@requiere_sesion(rol=DOCENTES)
 def actualizar_modulo(id_modulo):
     actual = modelo_curso.obtener_modulo(get_sqlite(), id_modulo)
     if actual is None:
@@ -135,7 +135,7 @@ def actualizar_modulo(id_modulo):
 
 
 @bp.delete("/modulos/<int:id_modulo>")
-@requiere_sesion(rol="profesor")
+@requiere_sesion(rol=DOCENTES)
 def eliminar_modulo(id_modulo):
     if not modelo_curso.eliminar_modulo(get_sqlite(), id_modulo):
         raise ErrorServicio(404, "No encontramos ese módulo.")

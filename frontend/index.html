@@ -288,37 +288,7 @@
 
                 <!-- TIPO DE USUARIO -->
 
-                <div class="mb-3">
-
-                    <label class="form-label">
-                        Tipo de usuario
-                    </label>
-
-
-                    <div class="tipo-usuario">
-
-
-                        <label class="usuario">
-
-                            <input type="radio" name="tipoUsuario" value="estudiante" checked>
-
-                            Estudiante
-
-                        </label>
-
-
-                        <label class="usuario">
-
-                            <input type="radio" name="tipoUsuario" value="profesor">
-
-                            Profesor
-
-                        </label>
-
-
-                    </div>
-
-                </div>
+                
 
 
                 <!-- CONTRASEÑA -->
@@ -329,7 +299,9 @@
                         Contraseña
                     </label>
 
-                    <input type="password" id="password" class="form-control" placeholder="Contraseña" required>
+                    <input type="password" id="password" class="form-control" placeholder="Contraseña" minlength="8" required>
+
+                    <div class="form-text">Mínimo 8 caracteres, con letras y números.</div>
 
                 </div>
 
@@ -1123,6 +1095,7 @@
                 <div class="profesor-nav-botones">
                     <button class="activo" onclick="mostrarPanelProfesor()">Panel</button>
                     <button onclick="mostrarGestionCursos()">Cursos</button>
+                    <button class="solo-admin oculto" onclick="mostrarAdminUsuarios()">Usuarios</button>
                     <button onclick="mostrarPerfilProfesor()">Perfil</button>
                 </div>
             </div>
@@ -1177,6 +1150,7 @@
                 <div class="profesor-nav-botones">
                     <button onclick="mostrarPanelProfesor()">Panel</button>
                     <button class="activo" onclick="mostrarGestionCursos()">Cursos</button>
+                    <button class="solo-admin oculto" onclick="mostrarAdminUsuarios()">Usuarios</button>
                     <button onclick="mostrarPerfilProfesor()">Perfil</button>
                 </div>
             </div>
@@ -1190,6 +1164,50 @@
             </div>
 
             <div class="lista-cursos" id="listaCursos"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- PANTALLA ADMINISTRACIÓN DE USUARIOS (solo rol admin) -->
+    <div id="pantallaAdminUsuarios" class="pantalla oculto">
+
+        <div class="gestion-cursos-contenedor">
+
+            <div class="profesor-nav">
+                <div class="logo">&lt;/&gt; EDUDEBUG</div>
+                <div class="profesor-nav-botones">
+                    <button onclick="mostrarPanelProfesor()">Panel</button>
+                    <button onclick="mostrarGestionCursos()">Cursos</button>
+                    <button class="activo" onclick="mostrarAdminUsuarios()">Usuarios</button>
+                    <button onclick="mostrarPerfilProfesor()">Perfil</button>
+                </div>
+            </div>
+
+            <h2 class="mb-1">Usuarios y roles</h2>
+            <p class="text-muted mb-4">Crea cuentas de profesor o administrador y cambia el rol de las existentes.</p>
+
+            <form id="formAdminUsuario" class="curso-item mb-4" style="display:block;">
+                <h4 class="mb-3">Crear cuenta</h4>
+                <div class="row g-2">
+                    <div class="col-md-3"><input type="text" id="adminNombre" class="form-control" placeholder="Nombre" required></div>
+                    <div class="col-md-3"><input type="email" id="adminEmail" class="form-control" placeholder="Correo" required></div>
+                    <div class="col-md-2"><input type="password" id="adminPassword" class="form-control" placeholder="Contraseña" minlength="8" required></div>
+                    <div class="col-md-2">
+                        <select id="adminRol" class="form-select">
+                            <option value="profesor">Profesor</option>
+                            <option value="admin">Administrador</option>
+                            <option value="estudiante">Estudiante</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Crear</button></div>
+                </div>
+                <div class="form-text">Contraseña: mínimo 8 caracteres, con letras y números.</div>
+            </form>
+
+            <div class="lista-cursos" id="listaUsuarios"></div>
 
         </div>
 

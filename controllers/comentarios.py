@@ -8,7 +8,7 @@ from models import usuario as modelo_usuario
 from models.sqlite_db import get_sqlite
 from services import actividad
 from services.errores import ErrorServicio
-from services.sesion import requiere_sesion
+from services.sesion import DOCENTES, requiere_sesion
 
 bp = Blueprint("comentarios", __name__, url_prefix="/api")
 
@@ -31,7 +31,7 @@ def _propio_o_404(id_comentario, permitir_profesor=False):
     if doc is None:
         raise ErrorServicio(404, "No encontramos ese comentario.")
     es_autor = doc["idUsuario"] == g.usuario["id_usuario"]
-    if not es_autor and not (permitir_profesor and g.usuario["rol"] == "profesor"):
+    if not es_autor and not (permitir_profesor and g.usuario["rol"] in DOCENTES):
         raise ErrorServicio(403, "Solo el autor puede modificar este comentario.")
     return identificador, doc
 

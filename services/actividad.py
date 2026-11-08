@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 TIPOS_ACTIVIDAD = (
     "registro", "login", "curso_consultado", "tema_visto",
     "diagnostico_iniciado", "diagnostico_respuesta", "diagnostico_finalizado",
-    "codigo_analizado", "comentario_creado",
+    "codigo_analizado", "comentario_creado", "login_fallido", "rol_cambiado", "usuario_creado_por_admin",
 )
 MAX_DETALLE = 2000  # caracteres del detalle serializado
 

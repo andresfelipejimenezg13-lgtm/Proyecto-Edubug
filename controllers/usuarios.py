@@ -1,4 +1,4 @@
-"""Registro de estudiantes y profesores."""
+"""Registro público de estudiantes y perfil del usuario."""
 import re
 
 from flask import Blueprint, g, jsonify
@@ -11,11 +11,17 @@ from models import usuario as modelo_usuario
 from models.sqlite_db import get_sqlite
 from services import actividad, progreso, recomendaciones
 from services.errores import ErrorServicio
-from services.sesion import requiere_sesion
+from services.sesion import DOCENTES, requiere_sesion
 
 bp = Blueprint("usuarios", __name__, url_prefix="/api/usuarios")
 
 CORREO_VALIDO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def validar_password(password):
+    """Política de contraseñas: mínimo 8 caracteres, con al menos una letra y un número."""
+    if len(password) < 8 or not re.search(r"[A-Za-z]", password) or not re.search(r"\d", password):
+        raise ErrorServicio(400, "La contraseña debe tener mínimo 8 caracteres, con letras y números.")
 
 
 @bp.post("/registro")
@@ -28,10 +34,10 @@ def registro():
 
     if not CORREO_VALIDO.match(email):
         raise ErrorServicio(400, "El correo no es válido.")
-    if len(password) < 6:
-        raise ErrorServicio(400, "La contraseña debe tener mínimo 6 caracteres.")
-    if rol not in ("estudiante", "profesor"):
-        raise ErrorServicio(400, "El tipo de usuario no es válido.")
+    validar_password(password)
+    if rol != "estudiante":
+        # Las cuentas de profesor y admin las crea un administrador (POST /api/admin/usuarios).
+        raise ErrorServicio(403, "El registro público solo crea cuentas de estudiante.")
 
     id_usuario = modelo_usuario.crear(get_sqlite(), nombre, email, generate_password_hash(password), rol)
     if id_usuario is None:
@@ -51,7 +57,7 @@ def perfil_completo(id_usuario):
     MongoDB (datos dinámicos): últimas 10 actividades, eventos por tipo y comentarios escritos.
     Si Mongo no está disponible, la parte SQL se entrega igual y `actividad.disponible` es false.
     """
-    if g.usuario["id_usuario"] != id_usuario and g.usuario["rol"] != "profesor":
+    if g.usuario["id_usuario"] != id_usuario and g.usuario["rol"] not in DOCENTES:
         raise ErrorServicio(403, "Solo puedes ver tu propio perfil.")
 
     conexion = get_sqlite()

@@ -77,7 +77,9 @@ def test_registro_valida_campos(cliente):
     registro = lambda **cambios: cliente.post("/api/usuarios/registro", json={**base, **cambios}).status_code
     assert registro(password="123") == 400
     assert registro(email="no-es-correo") == 400
-    assert registro(rol="admin") == 400
+    # el registro público solo crea estudiantes: profesor y admin se piden a un administrador
+    assert registro(rol="admin") == 403
+    assert registro(rol="profesor") == 403
     assert registro(nombre="  ") == 400
     assert registro() == 201
     assert registro() == 409  # correo repetido
@@ -127,7 +129,7 @@ def test_sqlite_tiene_claves_foraneas_y_restricciones(app):
         "INSERT INTO envios_codigo (id_usuario, codigo_html) VALUES (999, 'x')",          # FK
         "INSERT INTO errores_detectados (id_envio, tipo, linea, explicacion_ia) VALUES (1, 'otro', 1, 'x')",  # CHECK tipo
         "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES ('a', 'estudiante@edudebug.com', 'x', 'estudiante')",  # UNIQUE
-        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES ('a', 'b@c.com', 'x', 'admin')",  # CHECK rol
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES ('a', 'b@c.com', 'x', 'superusuario')",  # CHECK rol
     ):
         with pytest.raises(sqlite3.IntegrityError):
             conexion.execute(sql)

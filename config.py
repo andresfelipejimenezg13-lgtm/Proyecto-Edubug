@@ -26,5 +26,16 @@ class Config:
     # Crea las cuentas de prueba (estudiante@edudebug.com y profesor@edudebug.com, contraseña 123456).
     SEED_DEMO = os.environ.get("SEED_DEMO", "1") == "1"
 
-    TOKEN_MAX_AGE = 7 * 24 * 3600  # 7 días, en segundos
+    # Seguridad de la sesión (JWT). El token vence a las N horas y el usuario debe iniciar sesión otra vez.
+    TOKEN_MAX_AGE = int(float(os.environ.get("TOKEN_HORAS", "8")) * 3600)
+    JWT_EMISOR = "edudebug"
+
+    # Límite de intentos fallidos de login (por IP + correo): protege contra fuerza bruta.
+    LOGIN_MAX_INTENTOS = int(os.environ.get("LOGIN_MAX_INTENTOS", "5"))
+    LOGIN_VENTANA_SEG = int(os.environ.get("LOGIN_VENTANA_MIN", "15")) * 60
+
+    # Primer administrador (opcional). Si defines ambas variables, la cuenta se crea al iniciar.
+    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
     MAX_CODIGO_HTML = 20000        # caracteres máximos por envío al depurador

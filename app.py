@@ -3,14 +3,15 @@
 Local:   flask --app app run --debug
 Render:  gunicorn "app:create_app()"
 """
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from config import Config
-from controllers import (actividad, auth, comentarios, cursos, depurador, diagnostico, profesor,
+from controllers import (actividad, admin, auth, comentarios, cursos, depurador, diagnostico, profesor,
                          recomendaciones, usuarios)
 from models import mongo_db, sqlite_db
+from services import openapi
 from services.errores import ErrorServicio
 
 
@@ -27,13 +28,31 @@ def create_app(configuracion=None):
     mongo_db.init_app(app)
 
     for modulo in (auth, usuarios, diagnostico, depurador, recomendaciones, profesor, cursos,
-                   actividad, comentarios):
+                   actividad, comentarios, admin):
         app.register_blueprint(modulo.bp)
+
+    @app.after_request
+    def cabeceras_de_seguridad(respuesta):
+        respuesta.headers["X-Content-Type-Options"] = "nosniff"
+        respuesta.headers["X-Frame-Options"] = "DENY"
+        respuesta.headers["Referrer-Policy"] = "no-referrer"
+        if request.path.startswith("/api/"):
+            respuesta.headers["Cache-Control"] = "no-store"  # las respuestas de la API no se guardan en caché
+        return respuesta
 
     @app.get("/")
     def pagina_principal():
         """Entrega la página (index.html, estilos.css y script.js de la carpeta frontend/)."""
         return send_from_directory(app.static_folder, "index.html")
+
+    @app.get("/api/openapi.json")
+    def especificacion():
+        return jsonify(openapi.construir())
+
+    @app.get("/api/docs")
+    def documentacion():
+        """Swagger UI con la documentación interactiva de la API."""
+        return openapi.PAGINA_DOCS
 
     @app.get("/api/salud")
     def salud():

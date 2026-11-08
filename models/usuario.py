@@ -25,3 +25,22 @@ def por_id(conexion, id_usuario):
 def publico(fila):
     """Datos que sí se pueden enviar al navegador (nunca el hash)."""
     return {"id": fila["id_usuario"], "nombre": fila["nombre"], "email": fila["email"], "rol": fila["rol"]}
+
+
+def con_fecha(fila):
+    return {**publico(fila), "fechaRegistro": fila["fecha_registro"]}
+
+
+def listar(conexion, rol=None):
+    consulta = "SELECT * FROM usuarios"
+    parametros = ()
+    if rol:
+        consulta += " WHERE rol = ?"
+        parametros = (rol,)
+    return conexion.execute(consulta + " ORDER BY id_usuario", parametros).fetchall()
+
+
+def cambiar_rol(conexion, id_usuario, rol):
+    with conexion:
+        conexion.execute("UPDATE usuarios SET rol = ? WHERE id_usuario = ?", (rol, id_usuario))
+
