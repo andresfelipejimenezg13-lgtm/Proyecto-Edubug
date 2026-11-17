@@ -7,7 +7,7 @@ y Mongo solo guarda la bitácora.
 import json
 import logging
 
-from models import documentos
+from models.actividad import Actividad, disponible
 
 log = logging.getLogger(__name__)
 
@@ -20,11 +20,11 @@ MAX_DETALLE = 2000  # caracteres del detalle serializado
 
 
 def registrar(tipo, id_usuario, detalle=None):
-    if not documentos.disponible():
+    if not disponible():
         return None
     try:
-        doc = documentos.crear_actividad(id_usuario, tipo, detalle or {})
-        return str(doc["_id"])
+        evento = Actividad.crear(id_usuario, tipo, detalle or {})
+        return str(evento.id)
     except Exception:  # la bitácora es secundaria: nunca debe tumbar la petición
         log.warning("No se pudo guardar la actividad %s en MongoDB", tipo, exc_info=True)
         return None

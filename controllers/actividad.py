@@ -1,8 +1,8 @@
-"""Bitácora de actividad del usuario (MongoDB): crear, consultar y eliminar eventos."""
+"""CONTROLADOR de la bitácora de actividad del usuario (MongoDB): crear, consultar y eliminar eventos."""
 from flask import Blueprint, g, jsonify, request
 
 from controllers.utilidades import cuerpo_json
-from models import documentos
+from models.actividad import Actividad
 from services import actividad
 from services.errores import ErrorServicio
 from services.sesion import requiere_sesion
@@ -22,8 +22,7 @@ def crear():
     if tipo not in TIPOS_MANUALES:
         raise ErrorServicio(400, "Tipo de actividad no permitido. Permitidos: " + ", ".join(TIPOS_MANUALES) + ".")
     detalle = actividad.validar_detalle(datos.get("detalle", {}))
-    doc = documentos.crear_actividad(g.usuario["id_usuario"], tipo, detalle)
-    return jsonify(documentos.actividad_json(doc)), 201
+    return jsonify(Actividad.crear(g.usuario.id, tipo, detalle).a_dict()), 201
 
 
 @bp.get("")
@@ -39,18 +38,16 @@ def listar():
     tipo = request.args.get("tipo")
     if tipo and tipo not in actividad.TIPOS_ACTIVIDAD:
         raise ErrorServicio(400, "Ese tipo de actividad no existe.")
-    docs = documentos.ultimas_actividades(g.usuario["id_usuario"], limite, tipo)
-    return jsonify({"idUsuario": g.usuario["id_usuario"], "total": len(docs),
-                    "actividades": [documentos.actividad_json(d) for d in docs]})
+    eventos = Actividad.ultimas(g.usuario.id, limite, tipo)
+    return jsonify({"idUsuario": g.usuario.id, "total": len(eventos), "actividades": [e.a_dict() for e in eventos]})
 
 
 @bp.delete("/<id_actividad>")
 @requiere_sesion()
 def eliminar(id_actividad):
     """DELETE. Solo puedes borrar tus propios eventos."""
-    identificador = documentos.objeto_id(id_actividad, "El id de la actividad")
-    doc = documentos.actividad_por_id(identificador)
-    if doc is None or doc["idUsuario"] != g.usuario["id_usuario"]:
+    evento = Actividad.por_id(id_actividad)
+    if evento is None or evento.id_usuario != g.usuario.id:
         raise ErrorServicio(404, "No encontramos esa actividad.")
-    documentos.eliminar_actividad(identificador)
+    evento.eliminar()
     return jsonify({"eliminado": True})

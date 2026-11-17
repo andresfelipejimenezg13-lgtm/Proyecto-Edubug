@@ -7,3 +7,7 @@ instance/
 *.db-wal
 *.db-shm
 .env
+
+node_modules/
+*.zip
+.venv/

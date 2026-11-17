@@ -13,6 +13,8 @@ Regla de nivel (por número de aciertos): menos de 2 = bajo; 2 o 3 = medio; 4 o 
 """
 import random
 
+from models.diagnostico import PreguntaTest, TestDiagnostico
+from models.sqlite_db import transaccion
 from services.errores import ErrorServicio
 from services.generador_preguntas import obtener_generador
 
@@ -33,184 +35,97 @@ def siguiente_pantalla(nivel):
     return "teoria" if nivel == "bajo" else "catalogo"
 
 
-# ------------------------------------------------------------------ consultas auxiliares
+# ------------------------------------------------------------------ armar las respuestas
 
-def _pregunta_para_cliente(conexion, fila):
-    opciones = conexion.execute(
-        "SELECT id_opcion, texto FROM opciones_pregunta WHERE id_pregunta = ? ORDER BY id_opcion",
-        (fila["id_pregunta"],),
-    ).fetchall()
-    return {
-        "idPregunta": fila["id_pregunta"],
-        "texto": fila["texto"],
-        "tema": fila["tema"],
-        "opciones": [{"idOpcion": o["id_opcion"], "texto": o["texto"]} for o in opciones],
-    }
+def _pregunta_para_cliente(pregunta):
+    return {"idPregunta": pregunta.id, "texto": pregunta.texto, "tema": pregunta.tema,
+            "opciones": pregunta.opciones()}
 
 
-def _estado_en_curso(conexion, test):
-    respondidas = conexion.execute(
-        "SELECT COUNT(*) FROM preguntas_test WHERE id_test = ? AND es_correcta IS NOT NULL",
-        (test["id_test"],),
-    ).fetchone()[0]
-    pendiente = conexion.execute(
-        "SELECT * FROM preguntas_test WHERE id_test = ? AND es_correcta IS NULL ORDER BY orden LIMIT 1",
-        (test["id_test"],),
-    ).fetchone()
+def _estado_en_curso(test):
     return {
         "finalizado": False,
-        "idTest": test["id_test"],
-        "numero": respondidas + 1,
+        "idTest": test.id,
+        "numero": test.respondidas() + 1,
         "total": TOTAL_PREGUNTAS,
-        "pregunta": _pregunta_para_cliente(conexion, pendiente),
+        "pregunta": _pregunta_para_cliente(test.pendiente()),
     }
 
 
-def _resultado(conexion, id_test):
-    test = conexion.execute("SELECT * FROM tests_diagnosticos WHERE id_test = ?", (id_test,)).fetchone()
-    filas = conexion.execute(
-        "SELECT * FROM preguntas_test WHERE id_test = ? ORDER BY orden", (id_test,)
-    ).fetchall()
-    aciertos = sum(f["es_correcta"] for f in filas)
+def _resultado(test):
+    preguntas = test.preguntas()
     return {
         "finalizado": True,
-        "idTest": id_test,
-        "aciertos": aciertos,
-        "total": len(filas),
-        "nivel": test["nivel_asignado"],
-        "siguiente": siguiente_pantalla(test["nivel_asignado"]),
+        "idTest": test.id,
+        "aciertos": sum(p.es_correcta for p in preguntas),
+        "total": len(preguntas),
+        "nivel": test.nivel,
+        "siguiente": siguiente_pantalla(test.nivel),
         "detalle": [
-            {
-                "texto": f["texto"],
-                "tema": f["tema"],
-                "acerto": bool(f["es_correcta"]),
-                "tuRespuesta": f["respuesta_usuario"],
-                "respuestaCorrecta": f["respuesta"],
-            }
-            for f in filas
+            {"texto": p.texto, "tema": p.tema, "acerto": bool(p.es_correcta),
+             "tuRespuesta": p.respuesta_usuario, "respuestaCorrecta": p.respuesta}
+            for p in preguntas
         ],
     }
 
 
-def _estado_actual(conexion, id_test):
-    test = conexion.execute("SELECT * FROM tests_diagnosticos WHERE id_test = ?", (id_test,)).fetchone()
-    if test["estado"] == "finalizado":
-        return _resultado(conexion, id_test)
-    return _estado_en_curso(conexion, test)
+def _estado_actual(id_test):
+    test = TestDiagnostico.por_id(id_test)
+    return _resultado(test) if test.finalizado else _estado_en_curso(test)
 
 
 # ------------------------------------------------------------------ crear la siguiente pregunta
 
-def _crear_pregunta(conexion, id_test, id_usuario, orden, dificultad):
-    usadas = conexion.execute(
-        "SELECT origen, tema FROM preguntas_test WHERE id_test = ?", (id_test,)
-    ).fetchall()
-    historial = [
-        f["origen"]
-        for f in conexion.execute(
-            """
-            SELECT p.origen FROM preguntas_test p
-            JOIN tests_diagnosticos t ON t.id_test = p.id_test
-            WHERE t.id_usuario = ? AND p.id_test != ? AND p.origen IS NOT NULL
-            ORDER BY p.id_pregunta DESC LIMIT ?
-            """,
-            (id_usuario, id_test, HISTORIAL_MAXIMO),
-        )
-    ]
+def _crear_pregunta(test, orden, dificultad):
+    usadas = PreguntaTest.usadas_en(test.id)
+    historial = PreguntaTest.origenes_vistos(test.usuario_id, test.id, HISTORIAL_MAXIMO)
     nueva = obtener_generador().generar(
-        dificultad,
-        {f["origen"] for f in usadas},
-        {f["tema"] for f in usadas},
-        historial,
-    )
-    cursor = conexion.execute(
-        """
-        INSERT INTO preguntas_test (id_test, orden, texto, respuesta, generada_por_ia, tema, dificultad, origen)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (id_test, orden, nueva["texto"], nueva["respuesta"], nueva["generada_por_ia"],
-         nueva["tema"], nueva["dificultad"], nueva["origen"]),
-    )
+        dificultad, {origen for origen, _ in usadas}, {tema for _, tema in usadas}, historial)
     opciones = list(nueva["opciones"])
     random.shuffle(opciones)  # la respuesta correcta no queda siempre en la misma posición
-    for texto in opciones:
-        conexion.execute(
-            "INSERT INTO opciones_pregunta (id_pregunta, texto) VALUES (?, ?)",
-            (cursor.lastrowid, texto),
-        )
+    PreguntaTest.crear(test.id, orden, nueva, opciones)
 
 
 # ------------------------------------------------------------------ iniciar y responder
 
-def iniciar(conexion, usuario):
+def iniciar(usuario):
     # Si dejó un test sin terminar, se retoma: evita "refrescar hasta que salgan preguntas fáciles".
-    abierto = conexion.execute(
-        "SELECT * FROM tests_diagnosticos WHERE id_usuario = ? AND estado = 'en_curso' "
-        "ORDER BY id_test DESC LIMIT 1",
-        (usuario["id_usuario"],),
-    ).fetchone()
+    abierto = TestDiagnostico.abierto_de(usuario.id)
     if abierto:
-        return _estado_en_curso(conexion, abierto)
+        return _estado_en_curso(abierto)
 
-    with conexion:
-        id_test = conexion.execute(
-            "INSERT INTO tests_diagnosticos (id_usuario) VALUES (?)", (usuario["id_usuario"],)
-        ).lastrowid
-        _crear_pregunta(conexion, id_test, usuario["id_usuario"], 1, DIFICULTAD_INICIAL)
-    return _estado_actual(conexion, id_test)
+    with transaccion():
+        test = TestDiagnostico.crear(usuario.id)
+        _crear_pregunta(test, 1, DIFICULTAD_INICIAL)
+    return _estado_actual(test.id)
 
 
-def responder(conexion, usuario, id_test, id_pregunta, id_opcion):
-    test = conexion.execute(
-        "SELECT * FROM tests_diagnosticos WHERE id_test = ? AND id_usuario = ?",
-        (id_test, usuario["id_usuario"]),
-    ).fetchone()
+def responder(usuario, id_test, id_pregunta, id_opcion):
+    test = TestDiagnostico.por_id(id_test, usuario.id)
     if test is None:
         raise ErrorServicio(404, "No encontramos ese test.")
 
-    pregunta = conexion.execute(
-        "SELECT * FROM preguntas_test WHERE id_pregunta = ? AND id_test = ?", (id_pregunta, id_test)
-    ).fetchone()
+    pregunta = PreguntaTest.de_test(id_pregunta, id_test)
     if pregunta is None:
         raise ErrorServicio(400, "La pregunta no pertenece a este test.")
 
     # Doble clic o reenvío: la pregunta ya estaba contestada, se devuelve el estado actual sin duplicar nada.
-    if pregunta["es_correcta"] is not None:
-        return _estado_actual(conexion, id_test)
+    if pregunta.contestada:
+        return _estado_actual(id_test)
 
-    opcion = conexion.execute(
-        "SELECT * FROM opciones_pregunta WHERE id_opcion = ? AND id_pregunta = ?", (id_opcion, id_pregunta)
-    ).fetchone()
-    if opcion is None:
+    texto_elegido = pregunta.texto_de_opcion(id_opcion)
+    if texto_elegido is None:
         raise ErrorServicio(400, "La opción elegida no es válida.")
 
-    es_correcta = 1 if opcion["texto"] == pregunta["respuesta"] else 0
+    es_correcta = 1 if texto_elegido == pregunta.respuesta else 0
 
-    with conexion:
-        # Condicional: solo si sigue sin contestar, así dos clics simultáneos no se pisan.
-        guardada = conexion.execute(
-            "UPDATE preguntas_test SET respuesta_usuario = ?, es_correcta = ? "
-            "WHERE id_pregunta = ? AND es_correcta IS NULL",
-            (opcion["texto"], es_correcta, id_pregunta),
-        ).rowcount
-        if guardada:
-            respondidas = conexion.execute(
-                "SELECT COUNT(*) FROM preguntas_test WHERE id_test = ? AND es_correcta IS NOT NULL",
-                (id_test,),
-            ).fetchone()[0]
+    with transaccion():
+        if pregunta.registrar_respuesta(texto_elegido, es_correcta):
+            respondidas = test.respondidas()
             if respondidas >= TOTAL_PREGUNTAS:
-                aciertos = conexion.execute(
-                    "SELECT SUM(es_correcta) FROM preguntas_test WHERE id_test = ?", (id_test,)
-                ).fetchone()[0]
-                conexion.execute(
-                    "UPDATE tests_diagnosticos SET nivel_asignado = ?, estado = 'finalizado' "
-                    "WHERE id_test = ? AND estado = 'en_curso'",
-                    (calcular_nivel(aciertos), id_test),
-                )
+                test.finalizar(calcular_nivel(test.aciertos()))
             else:
                 # Acierto: la siguiente es más difícil. Error: más fácil.
-                siguiente = pregunta["dificultad"] + (1 if es_correcta else -1)
-                _crear_pregunta(
-                    conexion, id_test, usuario["id_usuario"], respondidas + 1, min(3, max(1, siguiente))
-                )
-    return _estado_actual(conexion, id_test)
+                siguiente = pregunta.dificultad + (1 if es_correcta else -1)
+                _crear_pregunta(test, respondidas + 1, min(3, max(1, siguiente)))
+    return _estado_actual(id_test)

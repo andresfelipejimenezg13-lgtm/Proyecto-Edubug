@@ -250,13 +250,13 @@ def test_perfil_de_profesor_no_tiene_progreso(cliente_mongo):
 
 
 def test_si_mongo_falla_la_peticion_principal_no_se_rompe(app_mongo, monkeypatch):
-    from models import documentos
+    from models.actividad import Actividad
     c = app_mongo.test_client()
     h = _estudiante(c)
 
     def roto(*a, **k):
         raise RuntimeError("Mongo caído")
-    monkeypatch.setattr(documentos, "crear_actividad", roto)
+    monkeypatch.setattr(Actividad, "crear", roto)
     # la bitácora falla en silencio y el flujo principal continúa
     assert c.post("/api/depurador/analizar", headers=h, json={"codigoHtml": CODIGO_MALO}).status_code == 200
     assert c.post("/api/diagnostico/iniciar", headers=h).status_code == 200

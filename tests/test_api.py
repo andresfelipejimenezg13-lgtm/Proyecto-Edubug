@@ -105,9 +105,18 @@ def test_endpoints_protegidos(cliente, estudiante, profesor):
 
 
 def test_la_pagina_se_sirve_desde_flask(cliente):
-    assert cliente.get("/").status_code == 200
-    assert cliente.get("/estilos.css").status_code == 200
-    assert cliente.get("/script.js").status_code == 200
+    """La vista (Vue compilada con Vite) la entrega Flask en GET / y sus archivos salen de frontend/dist."""
+    import re
+    pagina = cliente.get("/")
+    assert pagina.status_code == 200
+    html = pagina.get_data(as_text=True)
+    assert '<div id="app">' in html
+    archivos = re.findall(r'(?:src|href)="(/assets/[^"]+)"', html)
+    assert any(a.endswith(".js") for a in archivos) and any(a.endswith(".css") for a in archivos)
+    for archivo in archivos:
+        resp = cliente.get(archivo)
+        assert resp.status_code == 200, archivo
+        resp.close()
     assert cliente.get("/api/no-existe").status_code == 404
 
 
@@ -299,8 +308,25 @@ def test_detecta_mayusculas(cliente, estudiante):
 
 
 def test_detecta_atributos_sin_comillas_y_comilla_abierta(cliente, estudiante):
-    respuesta = analizar(cliente, estudiante, '<img src=imagen.jpg>\n<a href="https://x.com>Ir</a>')
+    respuesta = analizar(cliente, estudiante, '<img src=imagen.jpg alt="x">\n<a href="https://x.com>Ir</a>')
     assert tipos(respuesta) == [("atributo_sin_comillas", 1), ("atributo_sin_comillas", 2)]
+
+
+def test_letras_al_azar_no_se_toman_como_codigo_correcto(cliente, estudiante):
+    for texto in ("asdfgh", "hola mundo\notra linea", "<!-- nada -->"):
+        assert tipos(analizar(cliente, estudiante, texto)) == [("sin_html", 1)]
+
+
+def test_detecta_etiquetas_que_no_existen_y_etiquetas_incompletas(cliente, estudiante):
+    assert tipos(analizar(cliente, estudiante, "<asdf>hola</asdf>")) == [("etiqueta_desconocida", 1)]
+    respuesta = analizar(cliente, estudiante, "<p>bien</p>\n<p")
+    assert ("etiqueta_incompleta", 2) in tipos(respuesta)
+    assert analizar(cliente, estudiante, "<mi-componente>x</mi-componente>")["erroresDetectados"] == []
+
+
+def test_detecta_atributos_obligatorios_ausentes(cliente, estudiante):
+    respuesta = analizar(cliente, estudiante, '<img src="a.jpg">\n<a>Ir</a>\n<img alt="x">')
+    assert tipos(respuesta) == [("atributo_faltante", 1), ("atributo_faltante", 2), ("atributo_faltante", 3)]
 
 
 def test_las_comillas_simples_y_los_comentarios_no_dan_falsos_errores(cliente, estudiante):
@@ -365,8 +391,8 @@ def test_recomendacion_por_errores_recurrentes(cliente, estudiante):
     # sin cambios en los errores recurrentes no se crea otra recomendación
     assert analizar(cliente, estudiante, "<h1>\nhola")["recomendacion"] is None
     # un tipo nuevo que se vuelve recurrente sí genera una nueva
-    analizar(cliente, estudiante, "<img src=a.jpg>")
-    nueva = analizar(cliente, estudiante, "<img src=b.jpg>")["recomendacion"]
+    analizar(cliente, estudiante, "<img src=a.jpg alt=\"x\">")
+    nueva = analizar(cliente, estudiante, "<img src=b.jpg alt=\"x\">")["recomendacion"]
     assert set(nueva["basadoEnErrores"]) == {"etiqueta_sin_cerrar", "atributo_sin_comillas"}
 
 
@@ -386,16 +412,19 @@ def test_consultar_recomendaciones_y_permisos(cliente, estudiante, profesor):
 
 def test_catalogo_de_cursos(cliente, estudiante):
     cursos = cliente.get("/api/cursos", headers=estudiante).get_json()["cursos"]
-    assert len(cursos) == 1
-    assert cursos[0]["nombre"] == "HTML Básico" and cursos[0]["totalModulos"] == 5 and cursos[0]["disponible"] is True
+    assert len(cursos) == 5
+    assert cursos[0]["nombre"] == "HTML Básico" and cursos[0]["totalModulos"] == 8 and cursos[0]["disponible"] is True
+    assert [c["nombre"] for c in cursos[1:]] == ["CSS Básico", "JavaScript Básico", "Diseño Web Adaptable", "Git y GitHub"]
+    assert [c["disponible"] for c in cursos[1:]] == [True, True, True, False]   # Git y GitHub: próximamente
+    assert [c["totalModulos"] for c in cursos[1:]] == [6, 6, 4, 0]
     detalle = cliente.get("/api/cursos/1", headers=estudiante).get_json()
-    assert [m["orden"] for m in detalle["modulos"]] == [1, 2, 3, 4, 5]
+    assert [m["orden"] for m in detalle["modulos"]] == [1, 2, 3, 4, 5, 6, 7, 8]
     assert cliente.get("/api/cursos/99", headers=estudiante).status_code == 404
     assert cliente.get("/api/cursos").status_code == 401
 
 
 def test_crud_de_cursos_solo_para_profesores(cliente, estudiante, profesor):
-    nuevo = {"nombre": "CSS Básico", "descripcion": "Estilos para páginas web", "nivel": "Inicial", "estado": "Activo"}
+    nuevo = {"nombre": "Python Inicial", "descripcion": "Primeros pasos con Python", "nivel": "Inicial", "estado": "Activo"}
     assert cliente.post("/api/cursos", headers=estudiante, json=nuevo).status_code == 403
 
     creado = cliente.post("/api/cursos", headers=profesor, json=nuevo)
@@ -461,7 +490,7 @@ def test_panel_del_profesor_con_datos_reales(cliente, profesor):
     analizar(cliente, ana, "<div>\n<DIV>")           # 3 errores: 1 sin cerrar... (ver abajo)
     for _ in range(2):
         analizar(cliente, ana, "<p>ok</p>")           # 40 %
-    analizar(cliente, luis, "<img src=a.jpg>")        # 1 error, 0 %
+    analizar(cliente, luis, "<img src=a.jpg alt=\"x\">")        # 1 error, 0 %
 
     panel = cliente.get("/api/profesor/progreso/1", headers=profesor).get_json()
     assert panel["curso"] == "HTML Básico" and panel["estudiantesActivos"] == 2

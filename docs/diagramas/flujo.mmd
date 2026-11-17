@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  actor E as Estudiante
+  participant V as Vista (Vue · EditorView)
+  participant C as Controlador<br/>depurador.analizar
+  participant R as sesion.py<br/>(JWT + rol)
+  participant S as Servicio<br/>depurador.procesar
+  participant M as Modelos
+  participant D as SQLite / MongoDB
+  E->>V: pega su HTML y pulsa «Validar código»
+  V->>C: POST /api/depurador/analizar<br/>Authorization: Bearer token
+  C->>R: ¿token válido y rol estudiante?
+  R->>M: Usuario.por_id()
+  M->>D: SELECT usuarios
+  R-->>C: sí (si no: 401 / 403)
+  C->>C: valida que haya código y que no sea muy largo (400)
+  C->>S: procesar(usuario, codigo)
+  S->>S: analizar() y explicar() según el nivel
+  S->>M: EnvioCodigo.registrar() · Recomendacion.crear()
+  M->>D: INSERT envíos, errores, recomendación
+  S->>M: Actividad.crear("codigo_analizado")
+  M->>D: insert en Mongo
+  S-->>C: errores, recomendación y progreso
+  C-->>V: 200 + JSON
+  V-->>E: tarjetas de error con solución

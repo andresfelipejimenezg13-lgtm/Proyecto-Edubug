@@ -8,8 +8,12 @@ la conexión para cuando se quiera usar (por ejemplo, con MongoDB Atlas):
 - "mongomock://" usa una base falsa en memoria (solo para pruebas locales).
 """
 import logging
+from datetime import datetime, timezone
 
+from bson import ObjectId
 from flask import current_app
+
+from services.errores import ErrorServicio
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +30,43 @@ def _crear_cliente(uri):
 def get_mongo():
     """Base de datos Mongo lista para usar, o None si no se configuró MONGO_URI."""
     return current_app.extensions.get("mongo_db")
+
+
+def ahora():
+    return datetime.now(timezone.utc)
+
+
+def iso(fecha):
+    """Fecha en formato ISO 8601 UTC (Mongo puede devolverla sin zona horaria)."""
+    if fecha is None:
+        return None
+    if fecha.tzinfo is None:
+        fecha = fecha.replace(tzinfo=timezone.utc)
+    return fecha.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def disponible():
+    return get_mongo() is not None
+
+
+def coleccion(nombre):
+    """Devuelve la colección o lanza 503 si no hay MONGO_URI. Crea los índices la primera vez."""
+    base = get_mongo()
+    if base is None:
+        raise ErrorServicio(503, "MongoDB no está configurado (falta MONGO_URI).")
+    if not current_app.extensions.get("mongo_indices"):
+        base["actividad_usuario"].create_index([("idUsuario", 1), ("fecha", -1)])
+        base["actividad_usuario"].create_index([("tipo", 1)])
+        base["comentarios_modulo"].create_index([("idModulo", 1), ("fecha", -1)])
+        base["comentarios_modulo"].create_index([("idUsuario", 1)])
+        current_app.extensions["mongo_indices"] = True
+    return base[nombre]
+
+
+def objeto_id(texto, nombre="El identificador"):
+    if not isinstance(texto, str) or not ObjectId.is_valid(texto):
+        raise ErrorServicio(400, f"{nombre} no es válido.")
+    return ObjectId(texto)
 
 
 def modo_mongo():

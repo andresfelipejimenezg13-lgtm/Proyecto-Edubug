@@ -1,22 +1,26 @@
-"""Punto de entrada de la API de EDUDEBUG.
+"""Punto de entrada de EDUDEBUG: arma la aplicación Flask uniendo las tres partes del MVC.
 
-Local:   flask --app app run --debug
+    MODELO       models/       clases con los datos (SQLite y MongoDB) + services/ con las reglas de negocio
+    VISTA        frontend/     lo que ve el usuario (Vue 3: rutas, pantallas y componentes), entregada por controllers/vista.py
+    CONTROLADOR  controllers/  rutas HTTP (/api/...): validan la petición, llaman a los servicios y responden JSON
+
+Local:   flask --app app run --debug      ->  http://127.0.0.1:5000/
 Render:  gunicorn "app:create_app()"
 """
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from config import Config
 from controllers import (actividad, admin, auth, comentarios, cursos, depurador, diagnostico, profesor,
-                         recomendaciones, usuarios)
+                         recomendaciones, usuarios, vista)
 from models import mongo_db, sqlite_db
 from services import openapi
 from services.errores import ErrorServicio
 
 
 def create_app(configuracion=None):
-    app = Flask(__name__, static_folder="frontend", static_url_path="")
+    app = Flask(__name__, static_folder="frontend/dist", static_url_path="")
     app.config.from_object(Config)
     if configuracion:
         app.config.update(configuracion)
@@ -27,7 +31,7 @@ def create_app(configuracion=None):
     sqlite_db.init_app(app)
     mongo_db.init_app(app)
 
-    for modulo in (auth, usuarios, diagnostico, depurador, recomendaciones, profesor, cursos,
+    for modulo in (vista, auth, usuarios, diagnostico, depurador, recomendaciones, profesor, cursos,
                    actividad, comentarios, admin):
         app.register_blueprint(modulo.bp)
 
@@ -39,11 +43,6 @@ def create_app(configuracion=None):
         if request.path.startswith("/api/"):
             respuesta.headers["Cache-Control"] = "no-store"  # las respuestas de la API no se guardan en caché
         return respuesta
-
-    @app.get("/")
-    def pagina_principal():
-        """Entrega la página (index.html, estilos.css y script.js de la carpeta frontend/)."""
-        return send_from_directory(app.static_folder, "index.html")
 
     @app.get("/api/openapi.json")
     def especificacion():
@@ -57,11 +56,7 @@ def create_app(configuracion=None):
     @app.get("/api/salud")
     def salud():
         """Comprueba que las bases respondan (útil para Render y para Postman)."""
-        estado = {"sqlite": "ok", "mongodb": mongo_db.comprobar()}
-        try:
-            sqlite_db.get_sqlite().execute("SELECT 1").fetchone()
-        except Exception as error:
-            estado["sqlite"] = f"error: {error}"
+        estado = {"sqlite": sqlite_db.comprobar(), "mongodb": mongo_db.comprobar()}
         correcto = estado["sqlite"] == "ok" and estado["mongodb"] in ("ok", "no configurado")
         return jsonify(estado), 200 if correcto else 503
 

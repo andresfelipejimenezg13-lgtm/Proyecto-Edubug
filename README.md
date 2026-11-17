@@ -94,8 +94,15 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
 copy .env.example .env        # y completa MONGO_URI
+
+cd frontend                   # la vista (Vue 3 + Vite) se compila una vez
+npm install
+npm run build                 # genera frontend/dist, que Flask sirve en /
+cd ..
+
 flask --app app run --debug   # http://127.0.0.1:5000
 ```
+Para desarrollar la vista con recarga automática: `npm run dev` dentro de `frontend` (http://localhost:5173) mientras Flask corre en el 5000.
 Cuentas demo: `estudiante@`, `profesor@` y `admin@edudebug.com`, clave `123456`. Documentación interactiva: http://127.0.0.1:5000/api/docs
 Si vienes de una versión anterior, borra la carpeta `instance/`.
 
@@ -126,7 +133,7 @@ Si vienes de una versión anterior, borra la carpeta `instance/`.
 | 18 | DELETE actividad | [17 eliminar actividad.png](docs/capturas/17%20eliminar%20actividad.png) |
 | 19 | `python -m pytest -q`: 66 pruebas pasando | [18 pruebas.png](docs/capturas/18%20pruebas.png) |
 
-**Pruebas automáticas:** `python -m pytest -q` → 108 pruebas (API SQL, capa NoSQL, 39 de seguridad/RBAC y 3 de la documentación; usan MongoDB simulado con `mongomock`). Resultado en `docs/resultado_pruebas.txt`.
+**Pruebas automáticas:** `python -m pytest -q` → 109 pruebas (API SQL, capa NoSQL, 39 de seguridad/RBAC, documentación y verificación de endpoints; usan MongoDB simulado con `mongomock`). Resultado en `docs/resultado_pruebas.txt`.
 
 **Postman:** importar `postman/EDUDEBUG.postman_collection.json`; la carpeta *5. NoSQL* contiene las peticiones de MongoDB y la carpeta *6. Seguridad y roles* prueba 401/403/409 y el flujo del administrador (ejecutarla en orden). En el cuerpo de *Responder* (diagnóstico) escribir los ids como números sin comillas.
 
@@ -135,8 +142,17 @@ Si vienes de una versión anterior, borra la carpeta `instance/`.
 **Autores:** Andrés Felipe Jiménez Gaitán y Dylan Santiago Martínez Millares · Nuevas Tecnologías · Docente: Leandro Pájaro Fuentes.
 
 ## 8. Estructura del proyecto
-`app.py`, `config.py` · `models/` (SQLite, `mongo_db.py` conexión, `documentos.py` acceso a colecciones) · `controllers/` (endpoints) ·
-`services/` (diagnóstico adaptativo, depurador, recomendaciones, progreso, `actividad.py` bitácora) · `data/` · `frontend/` · `tests/` · `scripts/` · `postman/` · `docs/`.
+El proyecto sigue **Modelo-Vista-Controlador** (detalle, diagramas y flujo en [`docs/ARQUITECTURA_MVC.md`](docs/ARQUITECTURA_MVC.md)):
+
+| | Carpeta | Contenido |
+|---|---|---|
+| **Modelo** | `models/` | Clases `Usuario`, `Curso`, `Modulo`, `TestDiagnostico`, `PreguntaTest`, `EnvioCodigo`, `ErrorDetectado`, `Recomendacion` (SQLite) y `Actividad`, `Comentario` (MongoDB). Son las únicas que escriben SQL |
+| **Vista** | `frontend/` | Proyecto **Vue 3 + Vite** en `frontend/` (`src/`: router, views `.vue`, components `.vue`, services, store). Flask entrega `frontend/dist/`. Ver `docs/GUIA_VUE.md`. Se ve en **http://127.0.0.1:5000/** |
+| **Controlador** | `controllers/` | Endpoints `/api/...` (sesión, rol y validación de entrada) |
+| Reglas de negocio | `services/` | Diagnóstico adaptativo, depurador, recomendaciones, progreso, cuentas, JWT |
+
+Además: `app.py`, `config.py` · `data/` · `tests/` · `scripts/` · `postman/` · `docs/`.
+Verificación de endpoints: `python -m scripts.verificar_endpoints` (tabla en [`docs/ENDPOINTS_VERIFICADOS.md`](docs/ENDPOINTS_VERIFICADOS.md)).
 
 ## 9. Despliegue en Render
 Build `pip install -r requirements.txt` · Start `gunicorn "app:create_app()"` · variables `SECRET_KEY` (larga y secreta), `MONGO_URI`, `MONGO_DB`, `SEED_DEMO=0`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
@@ -149,6 +165,27 @@ El disco gratuito de Render es efímero: SQLite se reinicia en cada despliegue; 
 |---|---|
 | Registro solo de estudiantes y requisitos de contraseña | [20 registro con politica de contrasena.png](docs/capturas/20%20registro%20con%20politica%20de%20contrasena.png) |
 | Pantalla de administración: crear cuentas y cambiar roles (RBAC) | [21 admin usuarios y roles.png](docs/capturas/21%20admin%20usuarios%20y%20roles.png) |
-| 108 pruebas automáticas (39 de seguridad) | [`docs/resultado_pruebas.txt`](docs/resultado_pruebas.txt) |
+| 112 pruebas automáticas (39 de seguridad) | [`docs/resultado_pruebas.txt`](docs/resultado_pruebas.txt) |
 | Postman: carpeta *6. Seguridad y roles* (401/403/409/200) | Tomar captura del Runner y guardarla en `docs/capturas/22 postman seguridad.png` |
 | Swagger en `/api/docs` | Tomar captura y guardarla en `docs/capturas/23 swagger.png` |
+
+## 11. Evidencias de ejecución de la interfaz (Vue)
+Capturas tomadas con la aplicación corriendo (backend Flask + vista Vue compilada).
+
+| Rol | Pantalla | Captura |
+|---|---|---|
+| Público | Inicio | ![Inicio](docs/evidencia/inicio.png) |
+| Público | Inicio de sesión | ![Login](docs/evidencia/login.png) |
+| Estudiante | Test diagnóstico adaptativo | ![Diagnóstico](docs/evidencia/diagnostico.png) |
+| Estudiante | Resultado del diagnóstico | ![Resultado](docs/evidencia/resultado.png) |
+| Estudiante | Catálogo de cursos | ![Catálogo](docs/evidencia/catalogo.png) |
+| Estudiante | Módulos de un curso | ![Curso](docs/evidencia/curso.png) |
+| Estudiante | Lectura de un módulo con código y comentarios | ![Módulo](docs/evidencia/modulo.png) |
+| Estudiante | Depurador con errores encontrados | ![Editor](docs/evidencia/editor.png) |
+| Estudiante | Depurador con texto sin etiquetas | ![Editor texto suelto](docs/evidencia/editor_azar.png) |
+| Estudiante | Perfil, recomendaciones y actividad | ![Perfil](docs/evidencia/perfil.png) |
+| Profesor | Panel de progreso del grupo | ![Panel](docs/evidencia/panel.png) |
+| Profesor | Gestión de cursos | ![Cursos](docs/evidencia/cursos.png) |
+| Profesor | Módulos de un curso (agregar, editar, eliminar) | ![Módulos](docs/evidencia/modulos_profesor.png) |
+| Profesor | Edición de un módulo con vista previa | ![Editar módulo](docs/evidencia/editar_modulo.png) |
+| Admin | Usuarios y roles | ![Usuarios](docs/evidencia/usuarios.png) |

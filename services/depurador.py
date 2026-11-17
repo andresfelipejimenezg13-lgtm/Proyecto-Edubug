@@ -4,6 +4,10 @@ Tipos de error:
   etiqueta_sin_cerrar     etiquetas que se abren y no se cierran (o cierres sin apertura)
   etiqueta_en_mayusculas  nombres de etiqueta escritos con mayúsculas
   atributo_sin_comillas   valores de atributo sin comillas, o con una comilla sin cerrar
+  sin_html                el texto no tiene ninguna etiqueta HTML (por ejemplo, letras al azar)
+  etiqueta_desconocida    etiquetas que no existen en HTML (por ejemplo <asdf>)
+  atributo_faltante       <img> sin src o alt, <a> sin href
+  etiqueta_incompleta     una "<" que abre una etiqueta pero nunca se cierra con ">"
 
 Hoy las explicaciones salen de plantillas locales adaptadas al nivel (bajo, medio, alto). Para usar
 un servicio de IA bastaría con reemplazar `explicar()` (la columna se llama explicacion_ia).
@@ -18,7 +22,21 @@ VACIAS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "m
 ETIQUETA = re.compile(r"<(/?)([A-Za-z][A-Za-z0-9-]*)([^<>]*)>")
 ATRIBUTO_SIN_COMILLAS = re.compile(r"""([^\s"'<>/=]+)\s*=\s*(?!["'])([^\s>]+)""")
 
+CONOCIDAS = set("""
+a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col
+colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3
+h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter
+nav noscript object ol optgroup option output p param picture pre progress q rp rt ruby s samp script section select
+slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr
+track u ul var video wbr
+""".split())
+INCOMPLETA = re.compile(r"<(/?[A-Za-z][^<>]*)(?=<|\Z)")
+
 TITULOS = {
+    "sin_html": "No hay etiquetas HTML",
+    "etiqueta_desconocida": "Etiqueta que no existe",
+    "atributo_faltante": "Atributo obligatorio ausente",
+    "etiqueta_incompleta": "Etiqueta sin terminar",
     "etiqueta_sin_cerrar": "Etiqueta sin cerrar",
     "etiqueta_en_mayusculas": "Etiqueta en mayúsculas",
     "atributo_sin_comillas": "Atributo sin comillas",
@@ -50,6 +68,12 @@ def analizar(codigo):
     pila = []
     lineas_con_mayusculas = set()
 
+    if not ETIQUETA.search(limpio) and "<" not in limpio:
+        errores.append({"tipo": "sin_html", "linea": 1, "variante": "sin_etiquetas"})
+    for m in INCOMPLETA.finditer(limpio):
+        errores.append({"tipo": "etiqueta_incompleta", "linea": linea_de(m.start()), "variante": "sin_mayor",
+                        "etiqueta": m.group(1).split()[0].lstrip("/").lower()})
+
     for m in ETIQUETA.finditer(limpio):
         cierre, nombre_original, resto = m.group(1) == "/", m.group(2), m.group(3)
         nombre = nombre_original.lower()
@@ -71,6 +95,19 @@ def analizar(codigo):
             elif resto.count('"') % 2 == 1:
                 errores.append({"tipo": "atributo_sin_comillas", "linea": linea,
                                 "variante": "comilla_abierta", "etiqueta": nombre})
+
+        # --- etiquetas que no existen (no se apilan para no sumar más ruido)
+        if nombre not in CONOCIDAS and "-" not in nombre:
+            errores.append({"tipo": "etiqueta_desconocida", "linea": linea, "variante": "desconocida", "etiqueta": nombre})
+            continue
+
+        # --- atributos que no pueden faltar
+        if not cierre:
+            requeridos = {"img": ("src", "alt"), "a": ("href",)}.get(nombre, ())
+            for atributo in requeridos:
+                if not re.search(r"(?<![\w-])" + atributo + r"\s*=", resto):
+                    errores.append({"tipo": "atributo_faltante", "linea": linea, "variante": "falta_atributo",
+                                    "etiqueta": nombre, "atributo": atributo})
 
         # --- etiquetas sin cerrar (pila)
         if nombre in VACIAS:
@@ -147,6 +184,47 @@ def explicar(error, nivel):
         }[nivel]
         solucion = "Coloca el valor completo del atributo entre comillas."
         incorrecto, correcto = f"<{n} {a}=valor>", f'<{n} {a}="valor">'
+    elif v == "sin_etiquetas":
+        base = "No encontramos ninguna etiqueta HTML en tu código: solo hay texto suelto."
+        extra = {
+            "bajo": " HTML se escribe con etiquetas entre < y >, por ejemplo <p>Hola</p>. Sin ellas, el navegador no sabe "
+                    "qué es un título, un párrafo o una imagen.",
+            "medio": " Envuelve el texto en etiquetas, por ejemplo <p>Hola</p>.",
+            "alto": " Escribe el contenido dentro de etiquetas HTML.",
+        }[nivel]
+        solucion = "Escribe el texto dentro de etiquetas HTML, como <h1> o <p>."
+        incorrecto, correcto = "Hola mundo", "<p>Hola mundo</p>"
+    elif v == "desconocida":
+        base = f"La etiqueta <{n}> de la línea {l} no existe en HTML."
+        extra = {
+            "bajo": " Revisa cómo la escribiste: puede tener una letra de más o de menos. Algunas etiquetas comunes son "
+                    "<p>, <h1>, <a>, <img>, <ul> y <div>.",
+            "medio": " Revisa el nombre; ¿quisiste escribir <p>, <div> u otra?",
+            "alto": " Corrige el nombre o usa una etiqueta válida.",
+        }[nivel]
+        solucion = "Escribe el nombre correcto de la etiqueta (por ejemplo p, div, h1, a, img)."
+        incorrecto, correcto = f"<{n}>Contenido</{n}>", "<p>Contenido</p>"
+    elif v == "falta_atributo":
+        a = error["atributo"]
+        base = f"La etiqueta <{n}> de la línea {l} no tiene el atributo {a}."
+        extra = {
+            "src": " Sin src, la imagen no sabe de dónde cargarse.",
+            "alt": " El atributo alt describe la imagen para quien no puede verla y aparece si la imagen falla.",
+            "href": " Sin href, el enlace no lleva a ningún lugar.",
+        }.get(a, "") if nivel != "alto" else ""
+        solucion = f'Agrega el atributo {a}="..." a la etiqueta <{n}>.'
+        correcto = {"src": '<img src="foto.jpg" alt="Descripción">', "alt": '<img src="foto.jpg" alt="Descripción">',
+                    "href": '<a href="https://ejemplo.com">Ir</a>'}.get(a, f'<{n} {a}="valor">')
+        incorrecto = {"src": '<img alt="Descripción">', "alt": '<img src="foto.jpg">', "href": "<a>Ir</a>"}.get(a, f"<{n}>")
+    elif v == "sin_mayor":
+        base = f"La etiqueta <{n}> de la línea {l} empieza con < pero nunca termina con >."
+        extra = {
+            "bajo": " Toda etiqueta se escribe entre < y >. Si falta el >, el navegador no sabe dónde acaba la etiqueta.",
+            "medio": " Agrega el > al final de la etiqueta.",
+            "alto": "",
+        }[nivel]
+        solucion = "Agrega el símbolo > al final de la etiqueta."
+        incorrecto, correcto = f"<{n}", f"<{n}>"
     else:  # comilla_abierta
         base = f"La etiqueta <{n}> de la línea {l} tiene una comilla que se abre pero no se cierra."
         extra = {
@@ -163,4 +241,46 @@ def explicar(error, nivel):
         "solucion": solucion,
         "ejemploIncorrecto": incorrecto,
         "ejemploCorrecto": correcto,
+    }
+
+
+# ------------------------------------------------------------------ caso de uso completo (CU-03)
+
+def procesar(usuario, codigo):
+    """Analiza el código, lo guarda con sus errores, genera una recomendación si corresponde y arma la respuesta.
+
+    Es lo que hace el endpoint POST /api/depurador/analizar; el controlador solo valida la entrada.
+    """
+    from models.envio import EnvioCodigo
+    from services import actividad, progreso, recomendaciones
+
+    nivel = progreso.nivel_actual(usuario.id)
+
+    errores = []
+    for error in analizar(codigo):
+        explicado = explicar(error, nivel)
+        errores.append({"tipo": error["tipo"], "linea": error["linea"], "explicacionIA": explicado["explicacion"],
+                        "titulo": explicado["titulo"], "solucion": explicado["solucion"],
+                        "ejemploIncorrecto": explicado["ejemploIncorrecto"],
+                        "ejemploCorrecto": explicado["ejemploCorrecto"]})
+
+    id_envio = EnvioCodigo.registrar(
+        usuario.id, codigo,
+        [{"tipo": e["tipo"], "linea": e["linea"], "explicacion": e["explicacionIA"]} for e in errores])
+
+    # Extensión de CU-03: si hay errores recurrentes, se genera (y guarda) una recomendación de estudio.
+    id_recomendacion = recomendaciones.generar_si_corresponde(usuario.id)
+
+    actividad.registrar("codigo_analizado", usuario.id,
+                        {"idEnvio": id_envio, "totalErrores": len(errores),
+                         "tipos": sorted({e["tipo"] for e in errores}),
+                         "recomendacionGenerada": id_recomendacion is not None})
+
+    return {
+        "usuarioId": usuario.id,
+        "idEnvio": id_envio,
+        "erroresDetectados": errores,
+        "nivelDetectado": nivel or "sin_evaluar",
+        "recomendacion": recomendaciones.obtener(usuario.id, id_recomendacion) if id_recomendacion else None,
+        "progreso": progreso.progreso_estudiante(usuario.id),
     }

@@ -1,0 +1,21 @@
+%%{init: {"flowchart": {"wrappingWidth": 760, "nodeSpacing": 30, "rankSpacing": 45}}}%%
+flowchart TB
+  V["<b>VISTA</b> · frontend/<br/>Vue 3 (.vue): router · views · components · services · store<br/><i>Lo que ve el usuario. Pide datos a /api con fetch + token.</i>"]
+  C["<b>CONTROLADOR</b> · controllers/<br/>auth · usuarios · admin · diagnostico · depurador · cursos<br/>profesor · recomendaciones · actividad · comentarios · vista<br/><i>Recibe la petición, comprueba sesión y rol (JWT + RBAC), valida la entrada.</i>"]
+  S["<b>REGLAS DE NEGOCIO</b> · services/<br/>autenticacion · cuentas · diagnostico · depurador · recomendaciones · progreso<br/><i>Deciden qué hacer. No escriben SQL.</i>"]
+  M["<b>MODELO</b> · models/ (clases)<br/>Usuario · Curso · Modulo · TestDiagnostico · PreguntaTest<br/>EnvioCodigo · ErrorDetectado · Recomendacion · Actividad · Comentario<br/><i>Única capa que habla con las bases.</i>"]
+  D1[("SQLite · 11 tablas")]
+  D2[("MongoDB Atlas · 2 colecciones")]
+  V -->|"petición HTTP + JSON"| C
+  C -->|"llama"| S
+  S -->|"pide / guarda"| M
+  M --> D1
+  M --> D2
+  classDef vista fill:#E6F0FF,stroke:#1F5FBF,stroke-width:2px,color:#0E1A2B
+  classDef ctrl fill:#FFF3DC,stroke:#C98200,stroke-width:2px,color:#0E1A2B
+  classDef reg fill:#EEE9FB,stroke:#6B4FC9,stroke-width:2px,color:#0E1A2B
+  classDef mod fill:#E3F6F2,stroke:#1C7293,stroke-width:2px,color:#0E1A2B
+  class V vista
+  class C ctrl
+  class S reg
+  class M mod

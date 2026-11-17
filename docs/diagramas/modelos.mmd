@@ -1,0 +1,55 @@
+classDiagram
+  direction LR
+  class Usuario {
+    +id +nombre +email +rol
+    +por_id() por_email() listar()
+    +crear() cambiar_rol()
+    +a_dict()
+  }
+  class Curso {
+    +id +nombre +nivel +estado
+    +listar() obtener() crear()
+    +actualizar() eliminar() modulos()
+  }
+  class Modulo {
+    +id +titulo +orden
+    +de_curso() crear()
+    +actualizar() eliminar()
+  }
+  class TestDiagnostico {
+    +id +nivel +estado
+    +crear() abierto_de()
+    +preguntas() finalizar()
+  }
+  class PreguntaTest {
+    +id +texto +dificultad
+    +crear() opciones()
+    +registrar_respuesta()
+  }
+  class EnvioCodigo {
+    +registrar() resumen_de()
+  }
+  class ErrorDetectado {
+    +recurrentes_de() mas_frecuentes()
+  }
+  class Recomendacion {
+    +crear() detalle() ultima_id()
+  }
+  class Actividad {
+    <<MongoDB>>
+    +crear() ultimas() resumen_de()
+  }
+  class Comentario {
+    <<MongoDB>>
+    +crear() de_modulo()
+    +actualizar() reaccionar() eliminar()
+  }
+  Usuario "1" --> "*" TestDiagnostico
+  TestDiagnostico "1" --> "5" PreguntaTest
+  Usuario "1" --> "*" EnvioCodigo
+  EnvioCodigo "1" --> "*" ErrorDetectado
+  Usuario "1" --> "*" Recomendacion
+  Curso "1" --> "*" Modulo
+  Recomendacion "*" --> "*" Modulo
+  Usuario "1" ..> "*" Actividad : idUsuario
+  Modulo "1" ..> "*" Comentario : idModulo

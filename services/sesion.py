@@ -10,20 +10,19 @@ from functools import wraps
 import jwt
 from flask import current_app, g, request
 
-from models import usuario as modelo_usuario
-from models.sqlite_db import get_sqlite
+from models.usuario import Usuario
 from services.errores import ErrorServicio
 
-ROLES = ("estudiante", "profesor", "admin")
-DOCENTES = ("profesor", "admin")  # quienes pueden gestionar cursos y ver el progreso del grupo
+ROLES = Usuario.ROLES
+DOCENTES = Usuario.DOCENTES  # quienes pueden gestionar cursos y ver el progreso del grupo
 ALGORITMO = "HS256"
 
 
 def crear_token(usuario):
     ahora = datetime.now(timezone.utc)
     carga = {
-        "sub": str(usuario["id_usuario"]),
-        "rol": usuario["rol"],
+        "sub": str(usuario.id),
+        "rol": usuario.rol,
         "iat": ahora,
         "exp": ahora + timedelta(seconds=current_app.config["TOKEN_MAX_AGE"]),
         "iss": current_app.config["JWT_EMISOR"],
@@ -61,14 +60,16 @@ def requiere_sesion(rol=None):
                 raise ErrorServicio(401, "Debes iniciar sesión.")
             id_usuario = leer_token(cabecera[7:])
 
-            usuario = modelo_usuario.por_id(get_sqlite(), id_usuario)
+            usuario = Usuario.por_id(id_usuario)
             if usuario is None:
                 raise ErrorServicio(401, "La cuenta ya no existe.")
-            if permitidos and usuario["rol"] not in permitidos:
+            if permitidos and usuario.rol not in permitidos:
                 raise ErrorServicio(403, "No tienes permiso para esta acción.")
             g.usuario = usuario
             return funcion(*args, **kwargs)
 
+        envoltura.roles_permitidos = permitidos  # para que scripts/verificar_endpoints.py pueda leerlos
+        envoltura.requiere_sesion = True
         return envoltura
 
     return decorador

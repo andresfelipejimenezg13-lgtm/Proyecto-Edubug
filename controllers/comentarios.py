@@ -1,11 +1,10 @@
-"""Comentarios de los módulos (MongoDB): CRUD completo y reacciones."""
+"""CONTROLADOR de los comentarios de los módulos (MongoDB): CRUD completo y reacciones."""
 from flask import Blueprint, g, jsonify
 
 from controllers.utilidades import cuerpo_json, texto
-from models import curso as modelo_curso
-from models import documentos
-from models import usuario as modelo_usuario
-from models.sqlite_db import get_sqlite
+from models.comentario import Comentario
+from models.curso import Modulo
+from models.usuario import Usuario
 from services import actividad
 from services.errores import ErrorServicio
 from services.sesion import DOCENTES, requiere_sesion
@@ -25,25 +24,28 @@ def _campos(datos):
     return cuerpo, [e.strip().lower() for e in etiquetas], fragmento
 
 
-def _propio_o_404(id_comentario, permitir_profesor=False):
-    identificador = documentos.objeto_id(id_comentario, "El id del comentario")
-    doc = documentos.comentario_por_id(identificador)
-    if doc is None:
+def _comentario_o_404(id_comentario):
+    comentario = Comentario.por_id(id_comentario)
+    if comentario is None:
         raise ErrorServicio(404, "No encontramos ese comentario.")
-    es_autor = doc["idUsuario"] == g.usuario["id_usuario"]
-    if not es_autor and not (permitir_profesor and g.usuario["rol"] in DOCENTES):
+    return comentario
+
+
+def _propio_o_404(id_comentario, permitir_profesor=False):
+    comentario = _comentario_o_404(id_comentario)
+    es_autor = comentario.id_usuario == g.usuario.id
+    if not es_autor and not (permitir_profesor and g.usuario.rol in DOCENTES):
         raise ErrorServicio(403, "Solo el autor puede modificar este comentario.")
-    return identificador, doc
+    return comentario
 
 
-def _nombres(docs):
+def _nombres(comentarios):
     """Nombres de los autores, consultados en SQLite (el comentario solo guarda el idUsuario)."""
-    conexion = get_sqlite()
     nombres = {}
-    for id_usuario in {d["idUsuario"] for d in docs}:
-        fila = modelo_usuario.por_id(conexion, id_usuario)
-        if fila:
-            nombres[id_usuario] = fila["nombre"]
+    for id_usuario in {c.id_usuario for c in comentarios}:
+        usuario = Usuario.por_id(id_usuario)
+        if usuario:
+            nombres[id_usuario] = usuario.nombre
     return nombres
 
 
@@ -51,66 +53,60 @@ def _nombres(docs):
 @requiere_sesion()
 def crear(id_modulo):
     """CREATE. Cuerpo: {"texto", "etiquetas": [..], "fragmentoCodigo": ".."}."""
-    if modelo_curso.obtener_modulo(get_sqlite(), id_modulo) is None:
+    if Modulo.obtener(id_modulo) is None:
         raise ErrorServicio(404, "No encontramos ese módulo.")
     cuerpo, etiquetas, fragmento = _campos(cuerpo_json())
-    doc = documentos.crear_comentario(g.usuario["id_usuario"], id_modulo, cuerpo, etiquetas, fragmento)
-    actividad.registrar("comentario_creado", g.usuario["id_usuario"],
-                        {"idModulo": id_modulo, "idComentario": str(doc["_id"])})
-    return jsonify(documentos.comentario_json(doc, _nombres([doc]))), 201
+    comentario = Comentario.crear(g.usuario.id, id_modulo, cuerpo, etiquetas, fragmento)
+    actividad.registrar("comentario_creado", g.usuario.id,
+                        {"idModulo": id_modulo, "idComentario": str(comentario.id)})
+    return jsonify(comentario.a_dict(_nombres([comentario]))), 201
 
 
 @bp.get("/modulos/<int:id_modulo>/comentarios")
 @requiere_sesion()
 def listar(id_modulo):
     """READ (lista). Une Mongo (comentarios) con SQLite (nombre del autor)."""
-    if modelo_curso.obtener_modulo(get_sqlite(), id_modulo) is None:
+    if Modulo.obtener(id_modulo) is None:
         raise ErrorServicio(404, "No encontramos ese módulo.")
-    docs = documentos.comentarios_de_modulo(id_modulo)
-    nombres = _nombres(docs)
-    return jsonify({"idModulo": id_modulo, "total": len(docs),
-                    "comentarios": [documentos.comentario_json(d, nombres) for d in docs]})
+    comentarios = Comentario.de_modulo(id_modulo)
+    nombres = _nombres(comentarios)
+    return jsonify({"idModulo": id_modulo, "total": len(comentarios),
+                    "comentarios": [c.a_dict(nombres) for c in comentarios]})
 
 
 @bp.get("/comentarios/<id_comentario>")
 @requiere_sesion()
 def detalle(id_comentario):
     """READ (uno)."""
-    identificador = documentos.objeto_id(id_comentario, "El id del comentario")
-    doc = documentos.comentario_por_id(identificador)
-    if doc is None:
-        raise ErrorServicio(404, "No encontramos ese comentario.")
-    return jsonify(documentos.comentario_json(doc, _nombres([doc])))
+    comentario = _comentario_o_404(id_comentario)
+    return jsonify(comentario.a_dict(_nombres([comentario])))
 
 
 @bp.put("/comentarios/<id_comentario>")
 @requiere_sesion()
 def actualizar(id_comentario):
     """UPDATE. Solo el autor. Si no envías fragmentoCodigo, se quita."""
-    identificador, _ = _propio_o_404(id_comentario)
+    comentario = _propio_o_404(id_comentario)
     cuerpo, etiquetas, fragmento = _campos(cuerpo_json())
-    doc = documentos.actualizar_comentario(identificador, cuerpo, etiquetas, fragmento)
-    return jsonify(documentos.comentario_json(doc, _nombres([doc])))
+    actualizado = comentario.actualizar(cuerpo, etiquetas, fragmento)
+    return jsonify(actualizado.a_dict(_nombres([actualizado])))
 
 
 @bp.post("/comentarios/<id_comentario>/reacciones")
 @requiere_sesion()
 def reaccionar(id_comentario):
     """UPDATE parcial ($inc). Cuerpo: {"tipo": "util" | "gracias" | "confuso"}."""
-    identificador = documentos.objeto_id(id_comentario, "El id del comentario")
-    if documentos.comentario_por_id(identificador) is None:
-        raise ErrorServicio(404, "No encontramos ese comentario.")
+    comentario = _comentario_o_404(id_comentario)
     tipo = cuerpo_json().get("tipo")
     if tipo not in REACCIONES:
         raise ErrorServicio(400, "La reacción debe ser: " + ", ".join(REACCIONES) + ".")
-    doc = documentos.reaccionar(identificador, tipo)
-    return jsonify(documentos.comentario_json(doc, _nombres([doc])))
+    actualizado = comentario.reaccionar(tipo)
+    return jsonify(actualizado.a_dict(_nombres([actualizado])))
 
 
 @bp.delete("/comentarios/<id_comentario>")
 @requiere_sesion()
 def eliminar(id_comentario):
     """DELETE. El autor, o cualquier profesor (moderación)."""
-    identificador, _ = _propio_o_404(id_comentario, permitir_profesor=True)
-    documentos.eliminar_comentario(identificador)
+    _propio_o_404(id_comentario, permitir_profesor=True).eliminar()
     return jsonify({"eliminado": True})

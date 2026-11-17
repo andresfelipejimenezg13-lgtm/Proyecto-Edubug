@@ -10,13 +10,16 @@ valores únicos y restricciones CHECK.
 """
 import os
 import sqlite3
+from contextlib import contextmanager
 
 from flask import current_app, g
 from werkzeug.security import generate_password_hash
 
-from data.modulos_html import CURSO_HTML, MODULOS_HTML
+from data.cursos_extra import CURSOS_EXTRA, CURSOS_PROXIMOS
+from data.modulos_html import CURSO_HTML, MODULOS_HTML, MODULOS_V1
 
-TIPOS_ERROR = ("etiqueta_sin_cerrar", "atributo_sin_comillas", "etiqueta_en_mayusculas")
+TIPOS_ERROR = ("etiqueta_sin_cerrar", "atributo_sin_comillas", "etiqueta_en_mayusculas",
+               "sin_html", "etiqueta_desconocida", "atributo_faltante", "etiqueta_incompleta")
 _TIPOS_SQL = ", ".join(f"'{tipo}'" for tipo in TIPOS_ERROR)
 
 COLUMNAS_USUARIOS = """(
@@ -141,6 +144,38 @@ def _migrar_rol_admin(conexion):
     conexion.execute("PRAGMA foreign_keys = ON")
 
 
+def _migrar_tipos_error(conexion):
+    """Bases creadas antes solo aceptaban 3 tipos de error. Se reconstruyen las dos tablas que los guardan."""
+    fila = conexion.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'errores_detectados'").fetchone()
+    if fila is None or "'sin_html'" in fila["sql"]:
+        return
+    conexion.commit()
+    conexion.execute("PRAGMA foreign_keys = OFF")
+    conexion.executescript(f"""
+        BEGIN;
+        CREATE TABLE errores_nueva (
+            id_error       INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_envio       INTEGER NOT NULL REFERENCES envios_codigo(id_envio) ON DELETE CASCADE,
+            tipo           TEXT NOT NULL CHECK (tipo IN ({_TIPOS_SQL})),
+            linea          INTEGER NOT NULL CHECK (linea >= 1),
+            explicacion_ia TEXT NOT NULL
+        );
+        INSERT INTO errores_nueva SELECT id_error, id_envio, tipo, linea, explicacion_ia FROM errores_detectados;
+        DROP TABLE errores_detectados;
+        ALTER TABLE errores_nueva RENAME TO errores_detectados;
+        CREATE TABLE rec_errores_nueva (
+            tipo_error       TEXT NOT NULL CHECK (tipo_error IN ({_TIPOS_SQL})),
+            id_recomendacion INTEGER NOT NULL REFERENCES recomendaciones(id_recomendacion) ON DELETE CASCADE,
+            PRIMARY KEY (tipo_error, id_recomendacion)
+        );
+        INSERT INTO rec_errores_nueva SELECT tipo_error, id_recomendacion FROM recomendacion_errores;
+        DROP TABLE recomendacion_errores;
+        ALTER TABLE rec_errores_nueva RENAME TO recomendacion_errores;
+        COMMIT;
+    """)
+    conexion.execute("PRAGMA foreign_keys = ON")
+
+
 def conectar(ruta):
     if ruta != ":memory:":
         os.makedirs(os.path.dirname(os.path.abspath(ruta)), exist_ok=True)
@@ -156,6 +191,35 @@ def get_sqlite():
     if "sqlite" not in g:
         g.sqlite = conectar(current_app.config["SQLITE_PATH"])
     return g.sqlite
+
+
+@contextmanager
+def transaccion():
+    """Agrupa varias escrituras en una sola transacción (todo o nada).
+
+    Se puede anidar: solo la más externa confirma (commit) o deshace (rollback).
+    Los modelos la usan al escribir y los servicios la usan para juntar varias escrituras.
+    """
+    conexion = get_sqlite()
+    nivel = g.get("_transacciones", 0)
+    g._transacciones = nivel + 1
+    try:
+        if nivel == 0:
+            with conexion:
+                yield conexion
+        else:
+            yield conexion
+    finally:
+        g._transacciones = nivel
+
+
+def comprobar():
+    """Devuelve 'ok' o 'error: ...' (para /api/salud)."""
+    try:
+        get_sqlite().execute("SELECT 1").fetchone()
+        return "ok"
+    except Exception as error:
+        return f"error: {error}"
 
 
 def _cerrar(_error=None):
@@ -174,6 +238,59 @@ def _sembrar_curso(conexion):
             "INSERT INTO modulos (id_curso, titulo, contenido, orden) VALUES (?, ?, ?, ?)",
             (cursor.lastrowid, modulo["titulo"], modulo["contenido"], modulo["orden"]),
         )
+
+
+def _sembrar_proximos(conexion):
+    for curso in CURSOS_PROXIMOS:
+        if not conexion.execute("SELECT 1 FROM cursos WHERE nombre = ?", (curso["nombre"],)).fetchone():
+            conexion.execute(
+                "INSERT INTO cursos (nombre, descripcion, nivel, estado) VALUES (?, ?, ?, ?)",
+                (curso["nombre"], curso["descripcion"], curso["nivel"], curso["estado"]),
+            )
+
+
+def _actualizar_contenido(conexion):
+    """Versión 2: completa el curso inicial sin tocar lo que el profesor haya cambiado.
+
+    Agrega los módulos que faltan y reemplaza un módulo solo si su título y texto siguen siendo los originales.
+    """
+    curso = conexion.execute("SELECT id_curso FROM cursos WHERE nombre = ?", (CURSO_HTML["nombre"],)).fetchone()
+    if curso is None:   # el profesor lo borró: no reaparece
+        return
+    originales = {m["orden"]: m for m in MODULOS_V1}
+    for modulo in MODULOS_HTML:
+        actual = conexion.execute(
+            "SELECT id_modulo, titulo, contenido FROM modulos WHERE id_curso = ? AND orden = ?",
+            (curso["id_curso"], modulo["orden"])).fetchone()
+        if actual is None:
+            conexion.execute(
+                "INSERT INTO modulos (id_curso, titulo, contenido, orden) VALUES (?, ?, ?, ?)",
+                (curso["id_curso"], modulo["titulo"], modulo["contenido"], modulo["orden"]))
+        elif modulo["orden"] in originales and actual["contenido"] == originales[modulo["orden"]]["contenido"] \
+                and actual["titulo"] == originales[modulo["orden"]]["titulo"]:
+            conexion.execute("UPDATE modulos SET titulo = ?, contenido = ? WHERE id_modulo = ?",
+                             (modulo["titulo"], modulo["contenido"], actual["id_modulo"]))
+
+
+def _sembrar_cursos_extra(conexion):
+    """Versión 3: crea los cursos adicionales con sus módulos. Si el curso ya existe y está vacío
+    (los «Próximamente» de la versión 2), lo completa y lo activa; si ya tiene módulos, no lo toca."""
+    for item in CURSOS_EXTRA:
+        datos = item["curso"]
+        curso = conexion.execute("SELECT id_curso FROM cursos WHERE nombre = ?", (datos["nombre"],)).fetchone()
+        if curso is None:
+            id_curso = conexion.execute(
+                "INSERT INTO cursos (nombre, descripcion, nivel, estado) VALUES (?, ?, ?, ?)",
+                (datos["nombre"], datos["descripcion"], datos["nivel"], datos["estado"])).lastrowid
+        else:
+            id_curso = curso["id_curso"]
+            if conexion.execute("SELECT 1 FROM modulos WHERE id_curso = ?", (id_curso,)).fetchone():
+                continue
+            conexion.execute("UPDATE cursos SET descripcion = ?, nivel = ?, estado = ? WHERE id_curso = ?",
+                             (datos["descripcion"], datos["nivel"], datos["estado"], id_curso))
+        for modulo in item["modulos"]:
+            conexion.execute("INSERT INTO modulos (id_curso, titulo, contenido, orden) VALUES (?, ?, ?, ?)",
+                             (id_curso, modulo["titulo"], modulo["contenido"], modulo["orden"]))
 
 
 def _sembrar_usuarios_demo(conexion):
@@ -213,11 +330,18 @@ def init_app(app):
 
         conexion.executescript(ESQUEMA)
         _migrar_rol_admin(conexion)
+        _migrar_tipos_error(conexion)
         conexion.executescript(ESQUEMA)  # recrea índices que la migración pudiera haber eliminado
         conexion.execute("BEGIN IMMEDIATE")
-        if conexion.execute("PRAGMA user_version").fetchone()[0] == 0:
+        version = conexion.execute("PRAGMA user_version").fetchone()[0]
+        if version == 0:
             _sembrar_curso(conexion)  # solo al crear la base: si el profesor borra el curso, no reaparece
-            conexion.execute("PRAGMA user_version = 1")
+        elif version == 1:
+            _actualizar_contenido(conexion)   # bases anteriores: se completa el contenido una sola vez
+        if version < 3:
+            _sembrar_cursos_extra(conexion)
+            _sembrar_proximos(conexion)
+            conexion.execute("PRAGMA user_version = 3")
         if app.config["SEED_DEMO"]:
             _sembrar_usuarios_demo(conexion)
         _sembrar_admin(conexion, app.config["ADMIN_EMAIL"], app.config["ADMIN_PASSWORD"])
