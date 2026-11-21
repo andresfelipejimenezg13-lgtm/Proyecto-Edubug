@@ -133,7 +133,7 @@ Si vienes de una versión anterior, borra la carpeta `instance/`.
 | 18 | DELETE actividad | [17 eliminar actividad.png](docs/capturas/17%20eliminar%20actividad.png) |
 | 19 | `python -m pytest -q`: 66 pruebas pasando | [18 pruebas.png](docs/capturas/18%20pruebas.png) |
 
-**Pruebas automáticas:** `python -m pytest -q` → 109 pruebas (API SQL, capa NoSQL, 39 de seguridad/RBAC, documentación y verificación de endpoints; usan MongoDB simulado con `mongomock`). Resultado en `docs/resultado_pruebas.txt`.
+**Pruebas automáticas:** `python -m pytest -q` → 112 pruebas (API SQL, capa NoSQL, 39 de seguridad/RBAC, documentación y verificación de endpoints; usan MongoDB simulado con `mongomock`). Resultado en `docs/resultado_pruebas.txt`.
 
 **Postman:** importar `postman/EDUDEBUG.postman_collection.json`; la carpeta *5. NoSQL* contiene las peticiones de MongoDB y la carpeta *6. Seguridad y roles* prueba 401/403/409 y el flujo del administrador (ejecutarla en orden). En el cuerpo de *Responder* (diagnóstico) escribir los ids como números sin comillas.
 
